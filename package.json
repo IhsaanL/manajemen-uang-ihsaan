@@ -1,0 +1,13 @@
+{
+  "name": "manajemen-uang-ihsaan",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Aplikasi keuangan pribadi offline untuk Windows dan smartphone.",
+  "scripts": {
+    "build:css": "tailwindcss -i ./src/input.css -o ./assets/css/app.css --minify",
+    "watch:css": "tailwindcss -i ./src/input.css -o ./assets/css/app.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
+  }
+}

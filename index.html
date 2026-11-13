@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Manajemen Uang Ihsaan — ruang keuangan pribadi yang rapi, privat, dan berjalan sepenuhnya di perangkatmu.">
+  <meta name="theme-color" content="#F6F7F4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#111315" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Uang Ihsaan">
+  <meta name="format-detection" content="telephone=no">
+  <title>Manajemen Uang Ihsaan — Ruang finansial pribadi</title>
+
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icons/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="./assets/css/app.css">
+  <script src="./assets/vendor/lucide.min.js" defer></script>
+  <script src="./assets/vendor/chart.umd.min.js" defer></script>
+  <script src="./assets/js/core.js" defer></script>
+  <script src="./assets/js/render-dashboard.js" defer></script>
+  <script src="./assets/js/render-pages.js" defer></script>
+  <script src="./assets/js/actions.js" defer></script>
+  <script src="./assets/js/app.js" defer></script>
+</head>
+<body>
+  <noscript>
+    <div style="padding:24px;font-family:sans-serif;background:#fff7e6;color:#7c2d12;">
+      Aplikasi ini membutuhkan JavaScript. Aktifkan JavaScript di browser, lalu buka kembali file ini.
+    </div>
+  </noscript>
+
+  <!-- LAYAR KUNCI -->
+  <div id="lockScreen" class="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
+    <div class="lock-bg" aria-hidden="true"></div>
+    <button type="button" class="icon-btn absolute right-4 top-4 z-10" data-action="toggle-theme" aria-label="Ubah tema">
+      <i data-lucide="sun" class="h-[18px] w-[18px]"></i>
+    </button>
+
+    <div class="lock-card">
+      <div class="mx-auto mb-5 flex w-fit items-center gap-3 rounded-2xl border px-4 py-2.5" style="border-color:var(--line);background:color-mix(in srgb,var(--surface) 72%,transparent);">
+        <div class="grid h-9 w-9 place-items-center rounded-xl" style="background:var(--ink);color:var(--surface);">
+          <svg viewBox="0 0 32 32" class="h-5 w-5" fill="none" aria-hidden="true">
+            <path d="M8 10.5A3.5 3.5 0 0 1 11.5 7H23a2 2 0 0 1 2 2v2.5M8 10.5V22a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-5.5a3 3 0 0 0-3-3H8Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+            <path d="M19.5 18.5h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="text-left">
+          <div class="brand-wordmark" style="color:var(--ink);">Manajemen</div>
+          <div class="brand-sub" style="color:var(--emerald-deep);">Uang Ihsaan</div>
+        </div>
+      </div>
+
+      <p class="eyebrow mb-3">Akses eksklusif pemilik</p>
+      <h1 id="lockTitle" class="text-[28px] font-extrabold tracking-[-0.055em]" style="color:var(--ink);">Uangmu, urusanmu.</h1>
+      <p class="mx-auto mt-2 max-w-[280px] text-[11.5px] font-medium leading-relaxed" style="color:var(--muted);">
+        Masukkan PIN 4 digit untuk membuka catatan keuangan pribadimu.
+      </p>
+
+      <div id="pinDots" class="mt-8 flex items-center justify-center gap-3" aria-label="PIN 4 digit">
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+      </div>
+      <p id="pinMessage" class="mt-3 min-h-[18px] text-[10.5px] font-semibold" style="color:var(--muted);" aria-live="polite">
+        Ketuk angka atau gunakan keyboard.
+      </p>
+
+      <div id="pinKeypad" class="keypad mt-5">
+        <button type="button" class="keypad-btn" data-pin-key="1" aria-label="Angka 1">1</button>
+        <button type="button" class="keypad-btn" data-pin-key="2" aria-label="Angka 2">2</button>
+        <button type="button" class="keypad-btn" data-pin-key="3" aria-label="Angka 3">3</button>
+        <button type="button" class="keypad-btn" data-pin-key="4" aria-label="Angka 4">4</button>
+        <button type="button" class="keypad-btn" data-pin-key="5" aria-label="Angka 5">5</button>
+        <button type="button" class="keypad-btn" data-pin-key="6" aria-label="Angka 6">6</button>
+        <button type="button" class="keypad-btn" data-pin-key="7" aria-label="Angka 7">7</button>
+        <button type="button" class="keypad-btn" data-pin-key="8" aria-label="Angka 8">8</button>
+        <button type="button" class="keypad-btn" data-pin-key="9" aria-label="Angka 9">9</button>
+        <div class="grid place-items-center" aria-hidden="true">
+          <span class="grid h-9 w-9 place-items-center rounded-xl" style="color:var(--muted-2);">
+            <i data-lucide="shield-check" class="h-4 w-4"></i>
+          </span>
+        </div>
+        <button type="button" class="keypad-btn" data-pin-key="0" aria-label="Angka 0">0</button>
+        <button type="button" class="keypad-btn is-utility" data-pin-action="backspace" aria-label="Hapus angka">
+          <i data-lucide="delete" class="h-5 w-5"></i>
+        </button>
+      </div>
+
+      <div class="mt-8 flex items-center justify-center gap-2 text-[9.5px] font-semibold" style="color:var(--muted-2);">
+        <i data-lucide="lock" class="h-3 w-3"></i>
+        <span>Data tersimpan lokal. Tanpa cloud, tanpa akun.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- APLIKASI -->
+  <div id="appShell" class="app-shell relative" inert>
+    <div class="ambient-grid" aria-hidden="true"></div>
+
+    <div class="relative z-10 flex min-h-dvh">
+      <!-- SIDEBAR DESKTOP -->
+      <aside class="sidebar sticky top-0 hidden h-dvh flex-col p-5 lg:flex">
+        <a href="#dashboard" class="flex items-center gap-3 rounded-xl px-1 py-1" data-route="dashboard" aria-label="Ke dashboard">
+          <div class="brand-mark">
+            <svg viewBox="0 0 32 32" class="h-[22px] w-[22px]" fill="none" aria-hidden="true">
+              <path d="M8 10.5A3.5 3.5 0 0 1 11.5 7H23a2 2 0 0 1 2 2v2.5M8 10.5V22a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-5.5a3 3 0 0 0-3-3H8Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              <path d="M19.5 18.5h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="brand-wordmark" style="color:var(--ink);">Manajemen</div>
+            <div class="brand-sub">Uang Ihsaan</div>
+          </div>
+        </a>
+
+        <div class="mt-9">
+          <p class="nav-label mb-2">Ruang utama</p>
+          <nav class="space-y-1" aria-label="Navigasi utama">
+            <button type="button" class="nav-item" data-route="dashboard">
+              <i data-lucide="layout-dashboard" class="h-[17px] w-[17px]"></i>
+              <span>Dashboard</span>
+            </button>
+            <button type="button" class="nav-item" data-route="add">
+              <i data-lucide="plus" class="h-[17px] w-[17px]"></i>
+              <span>Catat Transaksi</span>
+            </button>
+            <button type="button" class="nav-item" data-route="subscriptions">
+              <i data-lucide="repeat-2" class="h-[17px] w-[17px]"></i>
+              <span>Langganan</span>
+              <span id="navSubBadge" class="nav-badge" hidden>0</span>
+            </button>
+          </nav>
+        </div>
+
+        <div class="mt-7">
+          <p class="nav-label mb-2">Arsip & kontrol</p>
+          <nav class="space-y-1" aria-label="Navigasi arsip">
+            <button type="button" class="nav-item" data-route="history">
+              <i data-lucide="receipt-text" class="h-[17px] w-[17px]"></i>
+              <span>Riwayat Transaksi</span>
+            </button>
+            <button type="button" class="nav-item" data-route="data">
+              <i data-lucide="database" class="h-[17px] w-[17px]"></i>
+              <span>Data & Pengaturan</span>
+            </button>
+          </nav>
+        </div>
+
+        <div class="mt-auto space-y-3 pt-6">
+          <div class="sidebar-privacy">
+            <div class="flex items-center gap-2.5">
+              <div class="grid h-7 w-7 place-items-center rounded-lg" style="background:var(--emerald-soft);color:var(--emerald-deep);">
+                <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
+              </div>
+              <div class="text-[10px] font-bold" style="color:var(--ink);">Mode privat</div>
+            </div>
+            <p class="mt-2 text-[9.5px] font-medium leading-relaxed" style="color:var(--muted);">
+              Catatan tersimpan di perangkat ini, bukan di server.
+            </p>
+            <button type="button" class="btn btn-secondary btn-sm mt-3 w-full" data-action="lock-app">
+              <i data-lucide="lock-keyhole" class="h-3.5 w-3.5"></i>
+              Kunci Aplikasi
+            </button>
+          </div>
+          <div class="flex items-center justify-between px-1 text-[9px] font-semibold" style="color:var(--muted-2);">
+            <span>Versi 1.0</span>
+            <button type="button" class="transition hover:opacity-70" data-route="data">Backup rutin</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- AREA KONTEN -->
+      <div class="flex min-w-0 flex-1 flex-col">
+        <header class="sticky top-0 z-30 border-b backdrop-blur-xl" style="border-color:var(--line);background:color-mix(in srgb, var(--canvas) 83%, transparent);">
+          <div class="mx-auto flex w-full max-w-[1520px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8 lg:py-4">
+            <div class="flex min-w-0 items-center gap-3">
+              <div class="brand-mark lg:hidden" style="width:38px;height:38px;border-radius:12px;">
+                <svg viewBox="0 0 32 32" class="h-5 w-5" fill="none" aria-hidden="true">
+                  <path d="M8 10.5A3.5 3.5 0 0 1 11.5 7H23a2 2 0 0 1 2 2v2.5M8 10.5V22a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-5.5a3 3 0 0 0-3-3H8Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                  <path d="M19.5 18.5h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <div class="hidden items-center gap-2 lg:flex">
+                  <span class="eyebrow" id="headerEyebrow">Ruang pribadi</span>
+                  <span class="h-1 w-1 rounded-full" style="background:var(--muted-2);"></span>
+                  <span class="text-[10px] font-semibold" id="headerDate">—</span>
+                </div>
+                <div class="eyebrow lg:hidden" id="headerEyebrowMobile">Ruang pribadi</div>
+                <h1 class="mt-0.5 truncate text-[17px] font-extrabold tracking-[-0.04em] lg:mt-1 lg:text-[19px]" id="pageTitle">Beranda</h1>
+              </div>
+            </div>
+
+            <div class="flex flex-shrink-0 items-center gap-2">
+              <div class="mr-1 hidden items-center gap-2 rounded-full border px-3 py-1.5 sm:flex" style="border-color:var(--line);background:var(--surface);">
+                <span class="h-1.5 w-1.5 rounded-full" style="background:var(--emerald);box-shadow:0 0 0 3px var(--emerald-soft);"></span>
+                <span class="text-[9.5px] font-bold" style="color:var(--muted);">Lokal & aman</span>
+              </div>
+              <button type="button" class="icon-btn" data-action="toggle-theme" aria-label="Ubah tema terang atau gelap" title="Ubah tema">
+                <i data-lucide="moon" class="h-[17px] w-[17px]"></i>
+              </button>
+              <button type="button" class="icon-btn" data-action="lock-app" aria-label="Kunci aplikasi" title="Kunci aplikasi">
+                <i data-lucide="lock-keyhole" class="h-[17px] w-[17px]"></i>
+              </button>
+              <div id="avatarInitials" class="grid h-[38px] w-[38px] place-items-center rounded-xl text-[10px] font-extrabold tracking-wide" style="background:var(--ink);color:var(--surface);" aria-label="Profil pemilik">IH</div>
+            </div>
+          </div>
+        </header>
+
+        <main class="relative z-10 mx-auto w-full max-w-[1520px] flex-1 px-4 pb-28 pt-4 sm:px-6 lg:px-8 lg:pb-10 lg:pt-6">
+          <!-- DASHBOARD -->
+          <section id="page-dashboard" class="page-section" data-page="dashboard">
+            <div id="budgetAlertContainer" class="mb-4 empty:hidden"></div>
+
+            <div class="grid grid-cols-1 gap-4 xl:grid-cols-12 xl:gap-5">
+              <!-- HERO -->
+              <article class="hero-card p-5 sm:p-7 xl:col-span-7">
+                <div class="hero-coin" aria-hidden="true"></div>
+                <div class="relative z-10 flex h-full flex-col">
+                  <div class="flex items-start justify-between gap-4">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="grid h-7 w-7 place-items-center rounded-lg border border-white/10 bg-white/[0.06] text-[#8df0ca]">
+                          <i data-lucide="sparkles" class="h-3.5 w-3.5"></i>
+                        </span>
+                        <span class="text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/55">Jatah aman hari ini</span>
+                      </div>
+                      <h2 class="mt-4 max-w-[430px] text-[20px] font-bold leading-tight tracking-[-0.035em] text-white/95 sm:text-[24px]">
+                        Batas aman jajan<br class="hidden sm:block"> hari ini.
+                      </h2>
+                    </div>
+                    <span id="safeStatusBadge" class="badge border border-white/10 bg-white/[0.07] text-white/80">Menghitung…</span>
+                  </div>
+
+                  <div class="mt-7 flex items-end justify-between gap-4">
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-baseline gap-x-2">
+                        <span class="money text-[20px] font-medium text-white/45 sm:text-[25px]">Rp</span>
+                        <span id="safeToSpend" class="money break-all text-[38px] font-semibold leading-none tracking-[-0.075em] text-white sm:text-[54px]">0</span>
+                      </div>
+                      <p id="safeToSpendHint" class="mt-3 max-w-[360px] text-[10.5px] font-medium leading-relaxed text-white/50">
+                        Hitungan otomatis dari sisa uang periode ini, tagihan belum dibayar, dan sisa hari.
+                      </p>
+                    </div>
+
+                    <div id="heroRing" class="hero-ring hidden sm:grid" style="--progress: 0;">
+                      <div class="hero-ring-content">
+                        <div id="heroRingPercent" class="money text-[17px] font-bold text-white">0%</div>
+                        <div class="mt-1 text-[7px] font-extrabold uppercase tracking-[0.16em] text-white/40">terpakai</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="mt-7 grid grid-cols-3 gap-3 border-t border-white/10 pt-5">
+                    <div class="min-w-0">
+                      <p class="text-[8px] font-extrabold uppercase tracking-[0.14em] text-white/35">Sisa periode</p>
+                      <p id="heroPeriodBalance" class="money mt-1.5 truncate text-[12px] font-semibold text-white/85">Rp 0</p>
+                    </div>
+                    <div class="mini-stat min-w-0">
+                      <p class="text-[8px] font-extrabold uppercase tracking-[0.14em] text-white/35">Tagihan</p>
+                      <p id="heroBills" class="money mt-1.5 truncate text-[12px] font-semibold text-white/85">Rp 0</p>
+                    </div>
+                    <div class="mini-stat min-w-0">
+                      <p class="text-[8px] font-extrabold uppercase tracking-[0.14em] text-white/35">Sisa hari</p>
+                      <p id="heroDaysLeft" class="money mt-1.5 text-[12px] font-semibold text-white/85">0 hari</p>
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              <!-- KARTU SAMPING -->
+              <div class="grid grid-cols-2 gap-4 xl:col-span-5 xl:gap-5">
+                <article class="card card-pad flex min-w-0 flex-col justify-between">
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="grid h-9 w-9 place-items-center rounded-xl" style="background:var(--emerald-soft);color:var(--emerald-deep);">
+                      <i data-lucide="wallet" class="h-4 w-4"></i>
+                    </div>
+                    <span class="eyebrow">Saldo</span>
+                  </div>
+                  <div class="mt-6 min-w-0">
+                    <p class="text-[9.5px] font-semibold" style="color:var(--muted);">Total saldo kamu</p>
+                    <p id="totalBalance" class="money mt-1.5 break-all text-[21px] font-bold leading-none tracking-[-0.065em] sm:text-[26px]">Rp 0</p>
+                  </div>
+                  <div class="mt-5 space-y-2 border-t pt-3.5" style="border-color:var(--line);">
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="flex items-center gap-1.5 text-[9px] font-semibold" style="color:var(--muted);">
+                        <i data-lucide="arrow-down-left" class="h-3 w-3" style="color:var(--emerald);"></i> Masuk
+                      </span>
+                      <span id="monthIncomeSmall" class="money text-[9.5px] font-semibold" style="color:var(--emerald-deep);">Rp 0</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="flex items-center gap-1.5 text-[9px] font-semibold" style="color:var(--muted);">
+                        <i data-lucide="arrow-up-right" class="h-3 w-3" style="color:var(--coral);"></i> Keluar
+                      </span>
+                      <span id="monthExpenseSmall" class="money text-[9.5px] font-semibold" style="color:var(--coral);">Rp 0</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="card card-pad flex min-w-0 flex-col justify-between">
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="grid h-9 w-9 place-items-center rounded-xl" style="background:var(--amber-soft);color:var(--amber);">
+                      <i data-lucide="flame" class="h-4 w-4"></i>
+                    </div>
+                    <span class="badge badge-emerald">Hemat</span>
+                  </div>
+                  <div class="mt-6 min-w-0">
+                    <p class="text-[9.5px] font-semibold" style="color:var(--muted);">Streak tanpa over-budget</p>
+                    <div class="mt-1 flex items-baseline gap-1.5">
+                      <span id="streakCount" class="money text-[29px] font-bold leading-none tracking-[-0.07em] sm:text-[34px]">0</span>
+                      <span class="text-[10px] font-bold" style="color:var(--muted);">hari</span>
+                    </div>
+                  </div>
+                  <div class="mt-5">
+                    <div id="streakDots" class="flex items-center gap-1"></div>
+                    <p id="streakHint" class="mt-2.5 text-[8.5px] font-medium leading-relaxed" style="color:var(--muted);">Mulai jaga batas harianmu.</p>
+                  </div>
+                </article>
+              </div>
+
+              <!-- BATAS -->
+              <article class="card card-pad xl:col-span-5">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="flex items-center gap-3">
+                    <div class="grid h-9 w-9 place-items-center rounded-xl" style="background:var(--surface-soft);color:var(--ink);">
+                      <i data-lucide="gauge" class="h-4 w-4"></i>
+                    </div>
+                    <div>
+                      <h2 class="section-title">Kendali batas</h2>
+                      <p class="section-subtitle">Jaga ritme mingguan & bulanan.</p>
+                    </div>
+                  </div>
+                  <button type="button" class="icon-btn icon-btn-sm" data-route="data" aria-label="Atur batas pengeluaran">
+                    <i data-lucide="settings-2" class="h-3.5 w-3.5"></i>
+                  </button>
+                </div>
+                <div id="budgetMonitor" class="mt-6 space-y-5"></div>
+              </article>
+
+              <!-- QUICK ADD -->
+              <article class="card card-pad flex flex-col xl:col-span-7">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="flex items-center gap-3">
+                    <div class="grid h-9 w-9 place-items-center rounded-xl" style="background:var(--emerald-soft);color:var(--emerald-deep);">
+                      <i data-lucide="zap" class="h-4 w-4"></i>
+                    </div>
+                    <div>
+                      <h2 class="section-title">Catat super cepat</h2>
+                      <p class="section-subtitle">Sekali ketuk, pengeluaran rutin langsung tercatat.</p>
+                    </div>
+                  </div>
+                  <button type="button" class="btn btn-secondary btn-sm hidden sm:inline-flex" data-route="add">
+                    <i data-lucide="plus" class="h-3.5 w-3.5"></i>
+                    Manual
+                  </button>
+                </div>
+
+                <div id="quickAdds" class="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3"></div>
+
+                <div class="mt-auto pt-5">
+                  <div id="quickToday" class="grid grid-cols-3 gap-2"></div>
+
+                  <div class="mt-3 flex flex-col gap-2 rounded-2xl border p-3.5 sm:flex-row sm:items-center sm:justify-between" style="border-color:var(--line);background:var(--surface-alt);">
+                    <div class="flex items-center gap-2.5">
+                      <span class="grid h-7 w-7 place-items-center rounded-lg" style="background:var(--amber-soft);color:var(--amber);">
+                        <i data-lucide="lightbulb" class="h-3.5 w-3.5"></i>
+                      </span>
+                      <p class="text-[9.5px] font-medium leading-snug" style="color:var(--muted);">
+                        Preset ini bisa kamu ubah di menu <span class="font-bold" style="color:var(--ink);">Data & Pengaturan</span>.
+                      </p>
+                    </div>
+                    <button type="button" class="text-left text-[9.5px] font-extrabold sm:text-right" style="color:var(--emerald-deep);" data-route="data">Kelola preset →</button>
+                  </div>
+                </div>
+              </article>
+
+              <!-- DONUT -->
+              <article class="card card-pad xl:col-span-5">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 class="section-title">Kebocoran terbesar</h2>
+                    <p class="section-subtitle">Pengeluaran bulan ini per kategori.</p>
+                  </div>
+                  <span class="badge badge-neutral" id="donutMonthLabel">Bulan ini</span>
+                </div>
+                <div class="chart-wrap mt-5">
+                  <canvas id="categoryChart" aria-label="Grafik donat pengeluaran per kategori" role="img"></canvas>
+                  <div id="donutCenter" class="chart-center">
+                    <p class="text-[8px] font-extrabold uppercase tracking-[0.16em]" style="color:var(--muted-2);">Total</p>
+                    <p id="donutTotal" class="money mt-1 text-[14px] font-bold">Rp 0</p>
+                  </div>
+                  <div id="donutEmpty" class="absolute inset-0 hidden items-center justify-center">
+                    <div class="empty-state">
+                      <div class="empty-icon"><i data-lucide="chart-pie" class="h-5 w-5"></i></div>
+                      <p class="mt-3 text-[11px] font-bold">Belum ada pengeluaran</p>
+                      <p class="mt-1 text-[9.5px] font-medium" style="color:var(--muted);">Catat jajan pertamamu untuk melihat pola.</p>
+                    </div>
+                  </div>
+                </div>
+                <div id="categoryLegend" class="mt-4 space-y-2.5"></div>
+              </article>
+
+              <!-- BAR -->
+              <article class="card card-pad xl:col-span-7">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 class="section-title">Tren 7 hari terakhir</h2>
+                    <p class="section-subtitle">Bandingkan pengeluaran harianmu.</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="eyebrow">Total 7 hari</p>
+                    <p id="week7Total" class="money mt-1 text-[15px] font-bold">Rp 0</p>
+                  </div>
+                </div>
+                <div class="chart-wrap mt-4">
+                  <canvas id="dailyChart" aria-label="Grafik batang pengeluaran harian 7 hari terakhir" role="img"></canvas>
+                  <div id="dailyEmpty" class="absolute inset-0 hidden items-center justify-center">
+                    <div class="empty-state">
+                      <div class="empty-icon"><i data-lucide="chart-column" class="h-5 w-5"></i></div>
+                      <p class="mt-3 text-[11px] font-bold">Grafik masih tenang</p>
+                      <p class="mt-1 text-[9.5px] font-medium" style="color:var(--muted);">Tujuh hari ke depan akan terisi otomatis.</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t pt-4" style="border-color:var(--line);">
+                  <span class="flex items-center gap-2 text-[9px] font-semibold" style="color:var(--muted);"><span class="h-2 w-2 rounded-sm" style="background:var(--emerald);"></span>Di bawah batas harian</span>
+                  <span class="flex items-center gap-2 text-[9px] font-semibold" style="color:var(--muted);"><span class="h-2 w-2 rounded-sm" style="background:var(--coral);"></span>Melewati batas</span>
+                  <span class="ml-auto text-[9px] font-semibold" id="dailyAverage" style="color:var(--muted-2);">Rata-rata Rp 0/hari</span>
+                </div>
+              </article>
+
+              <!-- LANGGANAN -->
+              <article class="card card-pad xl:col-span-5">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="flex items-center gap-3">
+                    <div class="grid h-9 w-9 place-items-center rounded-xl" style="background:var(--amber-soft);color:var(--amber);">
+                      <i data-lucide="radar" class="h-4 w-4"></i>
+                    </div>
+                    <div>
+                      <h2 class="section-title">Radar tagihan</h2>
+                      <p class="section-subtitle">Langganan yang segera jatuh tempo.</p>
+                    </div>
+                  </div>
+                  <button type="button" class="icon-btn icon-btn-sm" data-route="subscriptions" aria-label="Lihat semua langganan">
+                    <i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>
+                  </button>
+                </div>
+                <div id="upcomingList" class="mt-4"></div>
+              </article>
+
+              <!-- TRANSAKSI TERBARU -->
+              <article class="card card-pad xl:col-span-7">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 class="section-title">Terakhir dicatat</h2>
+                    <p class="section-subtitle">Jejak kecil yang bikin uang lebih terkendali.</p>
+                  </div>
+                  <button type="button" class="btn btn-ghost btn-sm" data-route="history">
+                    Semua riwayat
+                    <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
+                  </button>
+                </div>
+                <div id="recentList" class="mt-3"></div>
+              </article>
+            </div>
+          </section>
+
+          <!-- CATAT TRANSAKSI -->
+          <section id="page-add" class="page-section" data-page="add" hidden>
+            <div class="grid grid-cols-1 gap-4 xl:grid-cols-12 xl:gap-5">
+              <form id="txForm" class="card card-pad order-1 xl:col-span-7" novalidate>
+                <div id="editBanner" class="mb-5 hidden items-center gap-3 rounded-2xl border p-3.5" style="border-color:color-mix(in srgb,var(--amber) 34%,transparent);background:var(--amber-soft);">
+                  <span class="grid h-8 w-8 place-items-center rounded-lg" style="background:rgba(245,158,11,.15);color:var(--amber);">
+                    <i data-lucide="pencil" class="h-3.5 w-3.5"></i>
+                  </span>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-[10px] font-extrabold" style="color:var(--ink);">Sedang mengubah transaksi</p>
+                    <p class="text-[9px] font-medium" style="color:var(--muted);">Perubahan akan langsung memperbarui saldo dan grafik.</p>
+                  </div>
+                  <button type="button" class="btn btn-secondary btn-sm" data-action="cancel-edit">Batal</button>
+                </div>
+
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 class="section-title">Detail transaksi</h2>
+                    <p class="section-subtitle">Isi dengan tenang. Bisa diedit kapan saja.</p>
+                  </div>
+                  <span class="badge badge-neutral">Wajib diisi</span>
+                </div>
+
+                <div class="segmented mt-5" id="typeToggle" role="group" aria-label="Jenis transaksi">
+                  <button type="button" class="segment is-active" data-type="expense" aria-pressed="true">
+                    <i data-lucide="arrow-up-right" class="h-4 w-4"></i>
+                    Uang Keluar
+                  </button>
+                  <button type="button" class="segment" data-type="income" aria-pressed="false">
+                    <i data-lucide="arrow-down-left" class="h-4 w-4"></i>
+                    Uang Masuk
+                  </button>
+                </div>
+
+                <div class="mt-5">
+                  <label for="txAmount" class="field-label">
+                    <span>Nominal</span>
+                    <span class="text-[9px] font-medium" style="color:var(--muted-2);">Rupiah</span>
+                  </label>
+                  <div class="relative">
+                    <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[13px] font-bold" style="color:var(--muted-2);">Rp</span>
+                    <input id="txAmount" name="amount" type="text" inputmode="numeric" autocomplete="off" class="input-base h-[62px] pl-11 pr-4 font-mono text-[26px] font-semibold tracking-[-0.055em]" placeholder="0" aria-describedby="txAmountError">
+                  </div>
+                  <p id="txAmountError" class="field-error" aria-live="polite"></p>
+                </div>
+
+                <div class="mt-5">
+                  <div class="field-label">
+                    <span>Kategori</span>
+                    <span class="text-[9px] font-medium" id="categoryHint" style="color:var(--muted-2);">Pilih satu</span>
+                  </div>
+                  <div id="categoryChips" class="grid grid-cols-2 gap-2 sm:grid-cols-3"></div>
+                  <p id="txCategoryError" class="field-error" aria-live="polite"></p>
+                </div>
+
+                <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label for="txDate" class="field-label"><span>Tanggal</span></label>
+                    <input id="txDate" name="date" type="date" class="input-base" aria-describedby="txDateError">
+                    <p id="txDateError" class="field-error" aria-live="polite"></p>
+                  </div>
+                  <div>
+                    <label for="txNote" class="field-label"><span>Keterangan</span><span class="text-[9px] font-medium" style="color:var(--muted-2);">Maks. 80</span></label>
+                    <input id="txNote" name="note" type="text" maxlength="80" autocomplete="off" class="input-base" placeholder="Contoh: makan siang kampus" aria-describedby="txNoteError">
+                    <p id="txNoteError" class="field-error" aria-live="polite"></p>
+                  </div>
+                </div>
+
+                <div class="mt-6 flex flex-col-reverse gap-2 border-t pt-5 sm:flex-row sm:items-center sm:justify-between" style="border-color:var(--line);">
+                  <button type="button" class="btn btn-ghost" data-route="dashboard">
+                    <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                    Kembali
+                  </button>
+                  <button id="txSubmit" type="submit" class="btn btn-primary btn-lg sm:min-w-[180px]">
+                    <i data-lucide="check" class="h-4 w-4"></i>
+                    Simpan Transaksi
+                  </button>
+                </div>
+              </form>
+
+              <aside class="order-2 space-y-4 xl:col-span-5 xl:space-y-5">
+                <article class="hero-card p-5">
+                  <div class="relative z-10">
+                    <div class="flex items-center justify-between gap-3">
+                      <span class="text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/50">Dampak transaksi</span>
+                      <span id="previewTypeBadge" class="badge border border-white/10 bg-white/[0.07] text-white/80">Uang keluar</span>
+                    </div>
+                    <p class="mt-5 text-[10px] font-semibold text-white/45">Saldo setelah dicatat</p>
+                    <p id="previewBalance" class="money mt-1 break-all text-[30px] font-bold tracking-[-0.07em] text-white">Rp 0</p>
+                    <div class="mt-5 grid grid-cols-2 gap-3 border-t border-white/10 pt-4">
+                      <div>
+                        <p class="text-[8px] font-extrabold uppercase tracking-[0.14em] text-white/35">Jatah aman</p>
+                        <p id="previewSafe" class="money mt-1.5 text-[12px] font-semibold text-white/85">Rp 0/hari</p>
+                      </div>
+                      <div class="mini-stat">
+                        <p class="text-[8px] font-extrabold uppercase tracking-[0.14em] text-white/35">Status bulan</p>
+                        <p id="previewBudgetStatus" class="mt-1.5 text-[10px] font-bold text-white/85">Belum ada data</p>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="card card-pad">
+                  <div class="flex items-center gap-3">
+                    <div class="grid h-9 w-9 place-items-center rounded-xl" style="background:var(--emerald-soft);color:var(--emerald-deep);">
+                      <i data-lucide="scan-line" class="h-4 w-4"></i>
+                    </div>
+                    <div>
+                      <h3 class="section-title">Cek sebelum simpan</h3>
+                      <p class="section-subtitle">Tiga hal kecil, selisih besar.</p>
+                    </div>
+                  </div>
+                  <ul class="mt-4 space-y-3">
+                    <li class="flex items-start gap-2.5">
+                      <span class="mt-0.5 grid h-4 w-4 flex-none place-items-center rounded-full" style="background:var(--emerald-soft);color:var(--emerald-deep);"><i data-lucide="check" class="h-2.5 w-2.5"></i></span>
+                      <p class="text-[10px] font-medium leading-relaxed" style="color:var(--muted);">Pakai nominal sebenarnya, bukan pembulatan agar laporan tetap akurat.</p>
+                    </li>
+                    <li class="flex items-start gap-2.5">
+                      <span class="mt-0.5 grid h-4 w-4 flex-none place-items-center rounded-full" style="background:var(--emerald-soft);color:var(--emerald-deep);"><i data-lucide="check" class="h-2.5 w-2.5"></i></span>
+                      <p class="text-[10px] font-medium leading-relaxed" style="color:var(--muted);">Tulis keterangan singkat yang mudah dicari saat buka riwayat.</p>
+                    </li>
+                    <li class="flex items-start gap-2.5">
+                      <span class="mt-0.5 grid h-4 w-4 flex-none place-items-center rounded-full" style="background:var(--emerald-soft);color:var(--emerald-deep);"><i data-lucide="check" class="h-2.5 w-2.5"></i></span>
+                      <p class="text-[10px] font-medium leading-relaxed" style="color:var(--muted);">Tagihan rutin lebih rapi jika dicatat dari halaman Langganan.</p>
+                    </li>
+                  </ul>
+                </article>
+              </aside>
+            </div>
+          </section>
+
+          <!-- LANGGANAN -->
+          <section id="page-subscriptions" class="page-section" data-page="subscriptions" hidden>
+            <div class="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+              <div>
+                <p class="eyebrow mb-2">Pengeluaran berulang</p>
+                <h2 class="page-title">Radar langganan</h2>
+                <p class="page-subtitle">Pantau tagihan rutin sebelum menggerus jatah jajanmu.</p>
+              </div>
+              <button type="button" class="btn btn-primary" data-action="add-subscription">
+                <i data-lucide="plus" class="h-4 w-4"></i>
+                Tambah Langganan
+              </button>
+            </div>
+
+            <div id="subscriptionStats" class="grid grid-cols-1 gap-3 sm:grid-cols-3"></div>
+            <div id="subscriptionAlert" class="mt-4"></div>
+            <div id="subscriptionList" class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2"></div>
+            <div id="subscriptionEmpty" class="mt-4 hidden"></div>
+          </section>
+
+          <!-- RIWAYAT -->
+          <section id="page-history" class="page-section" data-page="history" hidden>
+            <div class="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+              <div>
+                <p class="eyebrow mb-2">Jejak keuangan</p>
+                <h2 class="page-title">Riwayat transaksi</h2>
+                <p class="page-subtitle">Cari, filter, edit, atau hapus catatan dengan mudah.</p>
+              </div>
+              <button type="button" class="btn btn-secondary" data-action="export-csv">
+                <i data-lucide="file-spreadsheet" class="h-4 w-4"></i>
+                Ekspor CSV
+              </button>
+            </div>
+
+            <div class="card card-pad">
+              <div class="grid grid-cols-2 gap-3 lg:grid-cols-12">
+                <div class="col-span-2 order-1 lg:order-1 lg:col-span-5">
+                  <label for="historySearch" class="field-label"><span>Cari transaksi</span></label>
+                  <div class="relative">
+                    <i data-lucide="search" class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2" style="color:var(--muted-2);"></i>
+                    <input id="historySearch" type="search" class="input-base pl-10" placeholder="Keterangan, kategori, nominal…" autocomplete="off">
+                  </div>
+                </div>
+                <div class="order-2 lg:order-2 lg:col-span-2">
+                  <label for="historyType" class="field-label"><span>Jenis</span></label>
+                  <select id="historyType" class="input-base">
+                    <option value="all">Semua</option>
+                    <option value="expense">Keluar</option>
+                    <option value="income">Masuk</option>
+                  </select>
+                </div>
+                <div class="col-span-2 order-4 lg:order-3 lg:col-span-3">
+                  <label for="historyCategory" class="field-label"><span>Kategori</span></label>
+                  <select id="historyCategory" class="input-base">
+                    <option value="all">Semua kategori</option>
+                  </select>
+                </div>
+                <div class="order-3 lg:order-4 lg:col-span-2">
+                  <label for="historyMonth" class="field-label"><span>Bulan</span></label>
+                  <select id="historyMonth" class="input-base">
+                    <option value="all">Semua</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3" style="border-color:var(--line);">
+                <div id="historySummary" class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[9.5px] font-semibold" style="color:var(--muted);"></div>
+                <button type="button" class="text-[9.5px] font-extrabold" style="color:var(--emerald-deep);" data-action="reset-filters">Reset filter</button>
+              </div>
+            </div>
+
+            <div class="card card-pad mt-4">
+              <div id="historyList"></div>
+              <div id="historyEmpty" class="hidden"></div>
+              <div class="mt-4 flex justify-center">
+                <button id="loadMoreBtn" type="button" class="btn btn-secondary hidden" data-action="load-more">
+                  <i data-lucide="chevrons-down" class="h-4 w-4"></i>
+                  Muat lebih banyak
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- DATA & PENGATURAN -->
+          <section id="page-data" class="page-section" data-page="data" hidden>
+            <div class="mb-4">
+              <p class="eyebrow mb-2">Kontrol penuh</p>
+              <h2 class="page-title">Data & pengaturan</h2>
+              <p class="page-subtitle">Semua milikmu. Cadangkan, pindahkan, atau atur ulang sesuai ritme.</p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 xl:grid-cols-12 xl:gap-5">
+              <div class="space-y-4 xl:col-span-7 xl:space-y-5">
+                <article class="card card-pad">
+                  <div class="flex items-start gap-3">
+                    <div class="grid h-10 w-10 place-items-center rounded-xl" style="background:var(--emerald-soft);color:var(--emerald-deep);">
+                      <i data-lucide="database-backup" class="h-[18px] w-[18px]"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <h2 class="section-title">Backup & pindah perangkat</h2>
+                      <p class="section-subtitle">Windows ↔ HP tanpa akun cloud. Simpan file JSON di tempat aman.</p>
+                    </div>
+                    <span id="backupStatus" class="badge badge-neutral">Belum backup</span>
+                  </div>
+
+                  <div class="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                    <button type="button" class="btn btn-primary justify-start" data-action="export-json">
+                      <i data-lucide="download" class="h-4 w-4"></i>
+                      Backup JSON
+                    </button>
+                    <button type="button" class="btn btn-secondary justify-start" data-action="import-json">
+                      <i data-lucide="upload" class="h-4 w-4"></i>
+                      Restore JSON
+                    </button>
+                    <button type="button" class="btn btn-secondary justify-start" data-action="export-csv">
+                      <i data-lucide="file-spreadsheet" class="h-4 w-4"></i>
+                      Laporan CSV
+                    </button>
+                  </div>
+
+                  <div class="mt-4 rounded-2xl border p-4" style="border-color:var(--line);background:var(--surface-alt);">
+                    <div class="flex items-start gap-3">
+                      <span class="grid h-8 w-8 flex-none place-items-center rounded-lg" style="background:var(--surface-soft);color:var(--muted);">
+                        <i data-lucide="arrow-left-right" class="h-4 w-4"></i>
+                      </span>
+                      <div>
+                        <p class="text-[10px] font-extrabold">Cara memindahkan ke HP</p>
+                        <ol class="mt-2 space-y-1.5 text-[9.5px] font-medium leading-relaxed" style="color:var(--muted);">
+                          <li><span class="font-extrabold" style="color:var(--ink);">1.</span> Tekan Backup JSON di perangkat ini.</li>
+                          <li><span class="font-extrabold" style="color:var(--ink);">2.</span> Kirim file ke HP lewat WhatsApp, email, atau kabel data.</li>
+                          <li><span class="font-extrabold" style="color:var(--ink);">3.</span> Buka aplikasi di HP, pilih Restore JSON, lalu pilih file tersebut.</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p class="mt-3 flex items-start gap-2 text-[9px] font-medium leading-relaxed" style="color:var(--muted);">
+                    <i data-lucide="info" class="mt-0.5 h-3 w-3 flex-none"></i>
+                    File backup memuat seluruh catatan dan pengaturan. Simpan di folder pribadi karena isinya sensitif.
+                  </p>
+                  <input type="file" id="importFile" accept="application/json,.json" class="hidden">
+                </article>
+
+                <article class="card card-pad">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <h2 class="section-title">Aplikasi di home screen</h2>
+                      <p class="section-subtitle">Agar terasa seperti aplikasi native di HP.</p>
+                    </div>
+                    <span class="grid h-9 w-9 place-items-center rounded-xl" style="background:var(--surface-soft);color:var(--ink);">
+                      <i data-lucide="smartphone" class="h-4 w-4"></i>
+                    </span>
+                  </div>
+                  <div class="install-banner mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p class="text-[10.5px] font-extrabold">Pasang Manajemen Uang Ihsaan</p>
+                      <p id="installHint" class="mt-1 text-[9.5px] font-medium leading-relaxed" style="color:var(--muted);">
+                        Buka lewat browser yang mendukung PWA, lalu pilih “Install app” atau “Tambahkan ke layar utama”.
+                      </p>
+                    </div>
+                    <button id="installBtn" type="button" class="btn btn-primary btn-sm flex-none" data-action="install-app">
+                      <i data-lucide="download" class="h-3.5 w-3.5"></i>
+                      Pasang
+                    </button>
+                  </div>
+                </article>
+
+                <article class="card card-pad">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <h2 class="section-title">Preset catat cepat</h2>
+                      <p class="section-subtitle">Tombol satu ketuk yang muncul di dashboard.</p>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" data-action="add-preset">
+                      <i data-lucide="plus" class="h-3.5 w-3.5"></i>
+                      Tambah
+                    </button>
+                  </div>
+                  <div id="presetList" class="mt-4 space-y-2"></div>
+                </article>
+              </div>
+
+              <div class="space-y-4 xl:col-span-5 xl:space-y-5">
+                <article class="card card-pad">
+                  <div class="flex items-start gap-3">
+                    <div class="grid h-9 w-9 place-items-center rounded-xl" style="background:var(--surface-soft);color:var(--ink);">
+                      <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
+                    </div>
+                    <div>
+                      <h2 class="section-title">Profil & batas</h2>
+                      <p class="section-subtitle">Patokan peringatan over-budget.</p>
+                    </div>
+                  </div>
+
+                  <form id="settingsForm" class="mt-5 space-y-4" novalidate>
+                    <div>
+                      <label for="settingName" class="field-label"><span>Nama panggilan</span></label>
+                      <input id="settingName" type="text" maxlength="24" class="input-base" placeholder="Ihsaan" autocomplete="nickname">
+                      <p id="settingNameError" class="field-error"></p>
+                    </div>
+                    <div>
+                      <label for="settingMonthly" class="field-label"><span>Batas bulanan</span><span class="text-[9px] font-medium" style="color:var(--muted-2);">Rp</span></label>
+                      <input id="settingMonthly" type="text" inputmode="numeric" class="input-base font-mono" placeholder="1.500.000">
+                      <p id="settingMonthlyError" class="field-error"></p>
+                    </div>
+                    <div>
+                      <label for="settingWeekly" class="field-label"><span>Batas mingguan</span><span class="text-[9px] font-medium" style="color:var(--muted-2);">Rp</span></label>
+                      <input id="settingWeekly" type="text" inputmode="numeric" class="input-base font-mono" placeholder="350.000">
+                      <p id="settingWeeklyError" class="field-error"></p>
+                    </div>
+                    <div class="flex items-center justify-between gap-3 rounded-xl border p-3" style="border-color:var(--line);background:var(--surface-alt);">
+                      <div>
+                        <p class="text-[10px] font-extrabold">Tema gelap</p>
+                        <p class="mt-0.5 text-[9px] font-medium" style="color:var(--muted);">Nyaman untuk malam hari.</p>
+                      </div>
+                      <button id="themeSwitch" type="button" class="switch" role="switch" aria-checked="false" aria-label="Aktifkan tema gelap" data-action="toggle-theme"></button>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full">
+                      <i data-lucide="save" class="h-4 w-4"></i>
+                      Simpan Pengaturan
+                    </button>
+                  </form>
+                </article>
+
+                <article class="card card-pad">
+                  <div class="flex items-start gap-3">
+                    <div class="grid h-9 w-9 place-items-center rounded-xl" style="background:var(--amber-soft);color:var(--amber);">
+                      <i data-lucide="key-round" class="h-4 w-4"></i>
+                    </div>
+                    <div>
+                      <h2 class="section-title">Ganti PIN</h2>
+                      <p class="section-subtitle">Empat digit, hanya untukmu.</p>
+                    </div>
+                  </div>
+                  <form id="pinForm" class="mt-5 space-y-3.5" novalidate>
+                    <div>
+                      <label for="currentPin" class="field-label"><span>PIN saat ini</span></label>
+                      <input id="currentPin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" class="input-base font-mono tracking-[0.5em]" placeholder="••••" autocomplete="current-password">
+                      <p id="currentPinError" class="field-error"></p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                      <div>
+                        <label for="newPin" class="field-label"><span>PIN baru</span></label>
+                        <input id="newPin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" class="input-base font-mono tracking-[0.4em]" placeholder="••••" autocomplete="new-password">
+                        <p id="newPinError" class="field-error"></p>
+                      </div>
+                      <div>
+                        <label for="confirmPin" class="field-label"><span>Ulangi</span></label>
+                        <input id="confirmPin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" class="input-base font-mono tracking-[0.4em]" placeholder="••••" autocomplete="new-password">
+                        <p id="confirmPinError" class="field-error"></p>
+                      </div>
+                    </div>
+                    <button type="submit" class="btn btn-secondary w-full">
+                      <i data-lucide="shield-check" class="h-4 w-4"></i>
+                      Perbarui PIN
+                    </button>
+                  </form>
+                </article>
+
+                <article class="card card-pad">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <h2 class="section-title">Ruang privat</h2>
+                      <p class="section-subtitle">Catatanmu tidak dikirim ke mana pun.</p>
+                    </div>
+                    <i data-lucide="shield-check" class="h-5 w-5" style="color:var(--emerald-deep);"></i>
+                  </div>
+                  <p class="mt-3 text-[9.5px] font-medium leading-relaxed" style="color:var(--muted);">
+                    Aplikasi berjalan tanpa server dan tanpa akun. Semua data disimpan di LocalStorage browser perangkat ini. Menghapus data browser dapat menghapus catatan, jadi lakukan backup rutin.
+                  </p>
+                  <button type="button" class="btn btn-secondary btn-sm mt-4 w-full" data-action="lock-app">
+                    <i data-lucide="lock-keyhole" class="h-3.5 w-3.5"></i>
+                    Kunci Aplikasi Sekarang
+                  </button>
+                </article>
+
+                <div class="danger-zone">
+                  <p class="text-[10.5px] font-extrabold" style="color:var(--coral);">Zona hati-hati</p>
+                  <p class="mt-1 text-[9.5px] font-medium leading-relaxed" style="color:var(--muted);">Menghapus data transaksi dan langganan tidak bisa dibatalkan. Buat backup terlebih dahulu.</p>
+                  <button type="button" class="btn btn-danger btn-sm mt-3 w-full" data-action="reset-data">
+                    <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
+                    Reset Data Keuangan
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <!-- NAVIGASI MOBILE -->
+    <nav class="mobile-nav fixed inset-x-0 bottom-0 z-40 lg:hidden" style="padding-bottom:env(safe-area-inset-bottom);" aria-label="Navigasi utama mobile">
+      <div class="mx-auto grid max-w-lg grid-cols-5 items-end px-2 pb-1.5 pt-1">
+        <button type="button" class="mobile-nav-item" data-route="dashboard">
+          <span class="mobile-nav-icon"><i data-lucide="layout-dashboard" class="h-[18px] w-[18px]"></i></span>
+          <span>Beranda</span>
+        </button>
+        <button type="button" class="mobile-nav-item" data-route="subscriptions">
+          <span class="mobile-nav-icon"><i data-lucide="repeat-2" class="h-[18px] w-[18px]"></i></span>
+          <span>Langganan</span>
+        </button>
+        <button type="button" class="mobile-nav-item" data-route="add" aria-label="Catat transaksi baru">
+          <span class="mobile-add"><i data-lucide="plus" class="h-6 w-6"></i></span>
+          <span>Catat</span>
+        </button>
+        <button type="button" class="mobile-nav-item" data-route="history">
+          <span class="mobile-nav-icon"><i data-lucide="receipt-text" class="h-[18px] w-[18px]"></i></span>
+          <span>Riwayat</span>
+        </button>
+        <button type="button" class="mobile-nav-item" data-route="data">
+          <span class="mobile-nav-icon"><i data-lucide="database" class="h-[18px] w-[18px]"></i></span>
+          <span>Data</span>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <div id="modalLayer" class="modal-layer" hidden aria-hidden="true"></div>
+  <div id="toastRegion" class="toast-region" role="status" aria-live="polite" aria-atomic="false"></div>
+</body>
+</html>
