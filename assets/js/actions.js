@@ -89,10 +89,17 @@ function openModal({ title, subtitle = '', content = '', wide = false }) {
   refreshIcons();
 
   window.setTimeout(() => {
-    const focusable = layer.querySelector(
-      'input:not([type="hidden"]):not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled)'
-    );
-    (focusable || layer.querySelector('.modal-card'))?.focus();
+    const active = document.activeElement;
+    const hasFieldFocus = active && layer.contains(active) && active.matches('input, select, textarea');
+    if (hasFieldFocus) return;
+    // Utamakan kolom isian. Tombol tutup (X) ada lebih dulu di DOM, jadi
+    // memakai querySelector biasa akan memfokuskan tombol itu dan mencuri
+    // fokus saat pengguna mulai mengetik.
+    const target =
+      layer.querySelector('input:not([type="hidden"]):not(:disabled), select:not(:disabled), textarea:not(:disabled)') ||
+      layer.querySelector('[data-confirm]') ||
+      layer.querySelector('.modal-card');
+    target?.focus({ preventScroll: true });
   }, 40);
 }
 

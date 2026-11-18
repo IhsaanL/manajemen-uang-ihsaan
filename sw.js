@@ -1,7 +1,7 @@
 /* Service worker — cache offline Manajemen Uang Ihsaan */
 'use strict';
 
-const CACHE_NAME = 'manajemen-uang-ihsaan-v1.2.0';
+const CACHE_NAME = 'manajemen-uang-ihsaan-v1.2.1';
 const APP_SHELL = [
   './',
   './index.html',
@@ -41,6 +41,28 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Jaringan dulu, cache sebagai cadangan. Dengan begitu HTML dan JS selalu
+// berasal dari versi yang sama; cache-first untuk aset sempat membuat HTML baru
+// berjalan dengan JS lama setelah pembaruan.
+async function networkFirst(request, { fallbackToShell = false } = {}) {
+  const cache = await caches.open(CACHE_NAME);
+  try {
+    const response = await fetch(request);
+    if (response && response.ok && response.type === 'basic') {
+      cache.put(request, response.clone()).catch(() => {});
+    }
+    return response;
+  } catch (error) {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    if (fallbackToShell) {
+      const shell = await cache.match('./index.html');
+      if (shell) return shell;
+    }
+    throw error;
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
@@ -52,27 +74,9 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.includes('/api/')) return;
 
   if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match('./index.html')))
-    );
+    event.respondWith(networkFirst(request, { fallbackToShell: true }));
     return;
   }
 
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request).then((response) => {
-        if (!response || response.status !== 200 || response.type === 'opaque') return response;
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-        return response;
-      });
-    })
-  );
+  event.respondWith(networkFirst(request));
 });

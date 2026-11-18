@@ -17,7 +17,7 @@ const APP_CONFIG = Object.freeze({
   minPinLength: 4, // PIN lama 4 digit tetap bisa membuka aplikasi
   storageKey: 'manajemen-uang-ihsaan:data:v1',
   schemaVersion: 1,
-  appVersion: '1.2.0',
+  appVersion: '1.2.1',
   lockOnLoad: true,
   maxPinAttempts: 5,
   pinLockoutSeconds: 30,
