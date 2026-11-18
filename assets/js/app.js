@@ -341,6 +341,18 @@ function handleGlobalClick(event) {
     case 'install-app':
       handleInstallApp();
       break;
+    case 'sync-now':
+      syncNow({ reason: 'manual', silent: false });
+      break;
+    case 'sync-pull':
+      syncForcePull();
+      break;
+    case 'sync-push':
+      syncForcePush();
+      break;
+    case 'sync-disconnect':
+      syncDisconnect();
+      break;
     case 'reset-filters':
       ui.history = { search: '', type: 'all', category: 'all', month: 'all', limit: 20 };
       renderHistoryOptions();
@@ -542,6 +554,7 @@ function initializeApp() {
   setupMoneyInput($('#settingMonthly'));
   setupMoneyInput($('#settingWeekly'));
   setupPWA();
+  if (typeof initializeSync === 'function') initializeSync();
 
   applyTheme(state.settings.theme, { persist: false });
   resetAddForm();

@@ -1,7 +1,7 @@
 /* Service worker — cache offline Manajemen Uang Ihsaan */
 'use strict';
 
-const CACHE_NAME = 'manajemen-uang-ihsaan-v1.0.0';
+const CACHE_NAME = 'manajemen-uang-ihsaan-v1.1.0';
 const APP_SHELL = [
   './',
   './index.html',
@@ -11,6 +11,7 @@ const APP_SHELL = [
   './assets/js/render-dashboard.js',
   './assets/js/render-pages.js',
   './assets/js/actions.js',
+  './assets/js/sync.js',
   './assets/js/app.js',
   './assets/vendor/lucide.min.js',
   './assets/vendor/chart.umd.min.js',
@@ -46,6 +47,9 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // API selalu langsung ke jaringan; jangan pernah di-cache.
+  if (url.pathname.includes('/api/')) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(

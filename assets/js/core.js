@@ -15,7 +15,7 @@ const APP_CONFIG = Object.freeze({
   defaultPin: '1234', // ← PIN 4 digit bawaan
   storageKey: 'manajemen-uang-ihsaan:data:v1',
   schemaVersion: 1,
-  appVersion: '1.0.0',
+  appVersion: '1.1.0',
   lockOnLoad: true,
   maxPinAttempts: 5,
   pinLockoutSeconds: 30,
@@ -522,11 +522,10 @@ function loadState() {
   }
 }
 
-function saveState() {
+function saveState({ dirty = true } = {}) {
   try {
     localStorage.setItem(APP_CONFIG.storageKey, JSON.stringify(state));
     ui.storageError = false;
-    return true;
   } catch (error) {
     console.error('Gagal menyimpan data:', error);
     ui.storageError = true;
@@ -535,6 +534,18 @@ function saveState() {
     }
     return false;
   }
+
+  // LocalStorage tetap sumber utama. Jika sinkronisasi aktif, perubahan ini
+  // akan dijadwalkan untuk dikirim ke API/MySQL tanpa menunggu jaringan.
+  if (dirty && typeof markStateDirty === 'function') {
+    try {
+      markStateDirty();
+    } catch (error) {
+      console.warn('Sinkronisasi tidak dapat dijadwalkan:', error);
+    }
+  }
+
+  return true;
 }
 
 /* --------------------------------------------------------------------------

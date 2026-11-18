@@ -843,7 +843,7 @@ function exportJSON() {
     },
   };
   state.meta.lastBackupAt = payload.data.meta.lastBackupAt;
-  saveState();
+  saveState({ dirty: false });
   downloadBlob(backupFilename('json'), JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
   renderDataPage();
   showToast('Backup JSON berhasil diunduh.');

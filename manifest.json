@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Manajemen Uang Ihsaan",
   "short_name": "Uang Ihsaan",
-  "description": "Ruang keuangan pribadi yang rapi, privat, dan berjalan sepenuhnya di perangkatmu.",
+  "description": "Ruang keuangan pribadi offline-first, dengan sinkronisasi opsional ke MySQL milikmu.",
   "lang": "id-ID",
   "dir": "ltr",
   "start_url": "./index.html#dashboard",

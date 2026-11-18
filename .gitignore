@@ -2,3 +2,8 @@ node_modules/
 .DS_Store
 Thumbs.db
 *.log
+
+# Rahasia lokal — jangan pernah di-commit.
+api/config.php
+api/config.local.php
+.env

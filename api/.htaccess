@@ -1,0 +1,12 @@
+# Jangan tampilkan isi folder API.
+Options -Indexes
+
+# File internal hanya boleh di-include oleh PHP, bukan dibuka dari browser.
+<FilesMatch "^(config\.php|config\.example\.php|lib\.php|schema\.sql)$">
+  Require all denied
+</FilesMatch>
+
+# Jangan cache respons API.
+<IfModule mod_headers.c>
+  Header always set Cache-Control "no-store"
+</IfModule>

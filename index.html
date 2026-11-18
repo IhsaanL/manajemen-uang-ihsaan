@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="Manajemen Uang Ihsaan — ruang keuangan pribadi yang rapi, privat, dan berjalan sepenuhnya di perangkatmu.">
+  <meta name="description" content="Manajemen Uang Ihsaan — ruang keuangan pribadi offline-first, dengan sinkronisasi opsional ke MySQL milikmu.">
   <meta name="theme-color" content="#F6F7F4" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#111315" media="(prefers-color-scheme: dark)">
   <meta name="color-scheme" content="light dark">
@@ -23,6 +23,7 @@
   <script src="./assets/js/render-dashboard.js" defer></script>
   <script src="./assets/js/render-pages.js" defer></script>
   <script src="./assets/js/actions.js" defer></script>
+  <script src="./assets/js/sync.js" defer></script>
   <script src="./assets/js/app.js" defer></script>
 </head>
 <body>
@@ -159,7 +160,7 @@
               <div class="text-[10px] font-bold" style="color:var(--ink);">Mode privat</div>
             </div>
             <p class="mt-2 text-[9.5px] font-medium leading-relaxed" style="color:var(--muted);">
-              Catatan tersimpan di perangkat ini, bukan di server.
+              Catatan tersimpan lokal, lalu disinkronkan ke server pribadi saat diaktifkan.
             </p>
             <button type="button" class="btn btn-secondary btn-sm mt-3 w-full" data-action="lock-app">
               <i data-lucide="lock-keyhole" class="h-3.5 w-3.5"></i>
@@ -167,7 +168,7 @@
             </button>
           </div>
           <div class="flex items-center justify-between px-1 text-[9px] font-semibold" style="color:var(--muted-2);">
-            <span>Versi 1.0</span>
+            <span>Versi 1.1</span>
             <button type="button" class="transition hover:opacity-70" data-route="data">Backup rutin</button>
           </div>
         </div>
@@ -196,9 +197,9 @@
             </div>
 
             <div class="flex flex-shrink-0 items-center gap-2">
-              <div class="mr-1 hidden items-center gap-2 rounded-full border px-3 py-1.5 sm:flex" style="border-color:var(--line);background:var(--surface);">
-                <span class="h-1.5 w-1.5 rounded-full" style="background:var(--emerald);box-shadow:0 0 0 3px var(--emerald-soft);"></span>
-                <span class="text-[9.5px] font-bold" style="color:var(--muted);">Lokal & aman</span>
+              <div id="syncStatusChip" class="mr-1 hidden items-center gap-2 rounded-full border px-3 py-1.5 sm:flex" style="border-color:var(--line);background:var(--surface);" title="Status sinkronisasi">
+                <span id="syncStatusDot" class="h-1.5 w-1.5 rounded-full" style="background:var(--muted);"></span>
+                <span id="syncStatusText" class="text-[9.5px] font-bold" style="color:var(--muted);">Lokal saja</span>
               </div>
               <button type="button" class="icon-btn" data-action="toggle-theme" aria-label="Ubah tema terang atau gelap" title="Ubah tema">
                 <i data-lucide="moon" class="h-[17px] w-[17px]"></i>
@@ -743,6 +744,82 @@
                 </article>
 
                 <article class="card card-pad">
+                  <div class="flex items-start gap-3">
+                    <div class="grid h-10 w-10 place-items-center rounded-xl" style="background:var(--emerald-soft);color:var(--emerald-deep);">
+                      <i data-lucide="refresh-cw" class="h-[18px] w-[18px]"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <h2 class="section-title">Sinkronisasi MySQL</h2>
+                      <p class="section-subtitle">LocalStorage tetap utama. Saat online, data digabung ke database Laragon.</p>
+                    </div>
+                    <span id="syncBadge" class="badge badge-neutral">Lokal saja</span>
+                  </div>
+
+                  <form id="syncForm" class="mt-4 space-y-3.5" novalidate>
+                    <div>
+                      <label for="syncServerUrl" class="field-label"><span>Alamat API</span><span class="text-[9px] font-medium" style="color:var(--muted-2);">opsional</span></label>
+                      <input id="syncServerUrl" type="url" class="input-base" placeholder="http://10.21.21.223/manajemen-uang-ihsaan/api" autocomplete="off" spellcheck="false">
+                      <p class="mt-1.5 text-[8.5px] font-medium leading-relaxed" style="color:var(--muted-2);">Kosongkan jika aplikasi dibuka dari server Laragon yang sama.</p>
+                    </div>
+                    <div>
+                      <label for="syncApiKey" class="field-label"><span>Kunci API</span><span class="text-[9px] font-medium" style="color:var(--muted-2);">rahasia</span></label>
+                      <input id="syncApiKey" type="password" class="input-base font-mono" placeholder="Kunci dari setup Laragon" autocomplete="off" spellcheck="false">
+                      <p id="syncFormError" class="field-error"></p>
+                    </div>
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                      <button type="submit" class="btn btn-primary flex-1">
+                        <i data-lucide="save" class="h-4 w-4"></i>
+                        Simpan & Sinkronkan
+                      </button>
+                      <button type="button" class="btn btn-secondary flex-1" data-action="sync-now">
+                        <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                        Sinkronkan Sekarang
+                      </button>
+                    </div>
+                  </form>
+
+                  <div class="mt-4 rounded-2xl border p-4" style="border-color:var(--line);background:var(--surface-alt);">
+                    <div class="flex items-start gap-2.5">
+                      <span id="syncStatusDotInline" class="mt-1 h-1.5 w-1.5 flex-none rounded-full" style="background:var(--muted);"></span>
+                      <div class="min-w-0">
+                        <p id="syncStatusDetail" class="text-[9.5px] font-semibold leading-relaxed" style="color:var(--muted);">Sinkronisasi belum aktif. Data tetap aman di perangkat ini.</p>
+                        <p class="mt-1.5 break-all text-[8.5px] font-medium" style="color:var(--muted-2);">Endpoint: <code id="syncEndpoint">—</code></p>
+                      </div>
+                    </div>
+                    <div class="mt-3 grid grid-cols-2 gap-3 border-t pt-3 text-[9px] font-medium" style="border-color:var(--line);">
+                      <div>
+                        <span class="block text-[8px] font-extrabold uppercase tracking-[0.1em]" style="color:var(--muted-2);">Terakhir sinkron</span>
+                        <span id="syncLastAt" class="mt-1 block font-bold" style="color:var(--ink);">Belum pernah</span>
+                      </div>
+                      <div>
+                        <span class="block text-[8px] font-extrabold uppercase tracking-[0.1em]" style="color:var(--muted-2);">Revisi server</span>
+                        <span id="syncRevision" class="mt-1 block font-bold" style="color:var(--ink);">0</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="mt-3 flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-action="sync-pull">
+                      <i data-lucide="cloud-download" class="h-3.5 w-3.5"></i>
+                      Ambil dari Server
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-action="sync-push">
+                      <i data-lucide="cloud-upload" class="h-3.5 w-3.5"></i>
+                      Kirim ke Server
+                    </button>
+                    <button id="syncDisconnectBtn" type="button" class="btn btn-danger btn-sm" data-action="sync-disconnect" hidden>
+                      <i data-lucide="unplug" class="h-3.5 w-3.5"></i>
+                      Putuskan
+                    </button>
+                  </div>
+
+                  <p class="mt-3 flex items-start gap-2 text-[9px] font-medium leading-relaxed" style="color:var(--muted);">
+                    <i data-lucide="shield-check" class="mt-0.5 h-3 w-3 flex-none"></i>
+                    <span>Aplikasi tidak pernah menghubungi MySQL langsung. Semua lewat API dengan kunci rahasia. PIN hanya kunci layar, bukan pengaman API.</span>
+                  </p>
+                </article>
+
+                <article class="card card-pad">
                   <div class="flex items-start justify-between gap-3">
                     <div>
                       <h2 class="section-title">Aplikasi di home screen</h2>
@@ -867,7 +944,7 @@
                     <i data-lucide="shield-check" class="h-5 w-5" style="color:var(--emerald-deep);"></i>
                   </div>
                   <p class="mt-3 text-[9.5px] font-medium leading-relaxed" style="color:var(--muted);">
-                    Aplikasi berjalan tanpa server dan tanpa akun. Semua data disimpan di LocalStorage browser perangkat ini. Menghapus data browser dapat menghapus catatan, jadi lakukan backup rutin.
+                    Aplikasi berjalan tanpa akun cloud. Data disimpan di LocalStorage perangkat ini. Jika sinkronisasi diaktifkan, data juga dikirim ke API PHP dan MySQL milikmu di Laragon. Menghapus data browser dapat menghapus catatan lokal, jadi lakukan backup rutin.
                   </p>
                   <button type="button" class="btn btn-secondary btn-sm mt-4 w-full" data-action="lock-app">
                     <i data-lucide="lock-keyhole" class="h-3.5 w-3.5"></i>
