@@ -1,7 +1,7 @@
 /* Service worker — cache offline Manajemen Uang Ihsaan */
 'use strict';
 
-const CACHE_NAME = 'manajemen-uang-ihsaan-v1.1.0';
+const CACHE_NAME = 'manajemen-uang-ihsaan-v1.2.0';
 const APP_SHELL = [
   './',
   './index.html',

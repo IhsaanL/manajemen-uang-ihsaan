@@ -163,6 +163,17 @@ if ($import.ExitCode -ne 0) {
 }
 Write-Host 'Skema dan tabel siap.' -ForegroundColor Green
 
+# Migrasi idempoten: PIN sekarang 6 digit, sedangkan kolom lama CHAR(4) akan
+# memotong PIN baru menjadi 4 digit.
+$pinMigration = "ALTER TABLE $DbName.settings MODIFY pin VARCHAR(6) NOT NULL DEFAULT '123456';"
+$migrate = Start-Process -FilePath $mysqlExe -ArgumentList ($mysqlArgs + @('--execute', $pinMigration)) `
+  -NoNewWindow -Wait -PassThru
+if ($migrate.ExitCode -ne 0) {
+  Write-Host 'Peringatan: migrasi kolom PIN gagal. Jalankan manual: ALTER TABLE settings MODIFY pin VARCHAR(6).' -ForegroundColor Yellow
+} else {
+  Write-Host 'Kolom PIN siap untuk 6 digit.' -ForegroundColor Green
+}
+
 Write-Step "Membuat akses web di C:\laragon\www"
 $wwwPath = Join-Path $LaragonPath 'www'
 $linkPath = Join-Path $wwwPath 'manajemen-uang-ihsaan'

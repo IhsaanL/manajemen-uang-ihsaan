@@ -784,8 +784,8 @@ function handlePinSubmit(event) {
     setError('#currentPin', '#currentPinError', 'PIN saat ini tidak sesuai.');
     firstInvalid = firstInvalid || $('#currentPin');
   }
-  if (!/^\d{4}$/.test(next)) {
-    setError('#newPin', '#newPinError', 'PIN harus tepat 4 digit angka.');
+  if (!new RegExp(`^\\d{${APP_CONFIG.pinLength}}$`).test(next)) {
+    setError('#newPin', '#newPinError', `PIN harus tepat ${APP_CONFIG.pinLength} digit angka.`);
     firstInvalid = firstInvalid || $('#newPin');
   }
   if (confirmation !== next) {

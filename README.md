@@ -40,8 +40,8 @@ LocalStorage tetap menjadi sumber kerja aplikasi. Saat online, aplikasi mengambi
 
 1. Buka folder proyek.
 2. Klik dua kali `index.html`.
-3. Masukkan PIN bawaan: **1234**.
-4. Ganti PIN di **Data & Pengaturan → Ganti PIN**.
+3. Masukkan PIN bawaan: **123456** (6 digit).
+4. Ganti PIN di **Data & Pengaturan → Ganti PIN**. PIN baru wajib 6 digit.
 
 Mode ini sepenuhnya lokal. Sinkronisasi MySQL tidak aktif.
 
@@ -191,7 +191,7 @@ Contoh `PUT`:
   "data": {
     "settings": {
       "name": "Ihsaan",
-      "pin": "1234",
+      "pin": "123456",
       "monthlyLimit": 1500000,
       "weeklyLimit": 350000,
       "theme": "system"

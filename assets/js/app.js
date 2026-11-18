@@ -44,7 +44,25 @@ function toggleTheme() {
 /* --------------------------------------------------------------------------
    KUNCI PIN
    -------------------------------------------------------------------------- */
+function activePinLength() {
+  const stored = String(state?.settings?.pin ?? '');
+  return Math.min(APP_CONFIG.pinLength, Math.max(APP_CONFIG.minPinLength, stored.length || APP_CONFIG.pinLength));
+}
+
+function ensurePinDots() {
+  const container = $('#pinDots');
+  if (!container) return;
+  const length = activePinLength();
+  if (container.children.length !== length) {
+    container.innerHTML = Array.from({ length }, () => '<span class="pin-dot"></span>').join('');
+  }
+  container.setAttribute('aria-label', `PIN ${length} digit`);
+  const hint = $('#pinHint');
+  if (hint) hint.textContent = `Masukkan PIN ${length} digit untuk membuka catatan keuangan pribadimu.`;
+}
+
 function updatePinDots({ error = false } = {}) {
+  ensurePinDots();
   const dots = $$('#pinDots .pin-dot');
   dots.forEach((dot, index) => {
     dot.classList.toggle('is-filled', index < ui.pinBuffer.length);
@@ -156,11 +174,12 @@ function unlockApp() {
 function handlePinDigit(digit) {
   if (!ui.isLocked) return;
   if (Date.now() < ui.pinLockedUntil) return;
-  if (ui.pinBuffer.length >= 4) return;
+  const length = activePinLength();
+  if (ui.pinBuffer.length >= length) return;
   ui.pinBuffer += digit;
   updatePinDots();
   setPinMessage('Memeriksa…');
-  if (ui.pinBuffer.length === 4) {
+  if (ui.pinBuffer.length === length) {
     window.setTimeout(verifyPin, 130);
   }
 }
@@ -174,7 +193,8 @@ function handlePinBackspace() {
 }
 
 function verifyPin() {
-  if (!ui.isLocked || ui.pinBuffer.length !== 4) return;
+  const length = activePinLength();
+  if (!ui.isLocked || ui.pinBuffer.length !== length) return;
   if (ui.pinBuffer === state.settings.pin) {
     setPinMessage('Akses diberikan. Selamat datang kembali.', 'success');
     updatePinDots();
@@ -472,7 +492,7 @@ function bindStaticEvents() {
   ['#currentPin', '#newPin', '#confirmPin'].forEach((selector) => {
     const input = $(selector);
     input?.addEventListener('input', () => {
-      input.value = input.value.replace(/\D/g, '').slice(0, 4);
+      input.value = input.value.replace(/\D/g, '').slice(0, APP_CONFIG.pinLength);
       clearError(selector, `${selector}Error`);
     });
   });

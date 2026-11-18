@@ -222,8 +222,8 @@ function muis_sanitize_settings(mixed $raw): array
 {
     $settings = is_array($raw) ? $raw : [];
     $pin = (string) ($settings['pin'] ?? '');
-    if (!preg_match('/^\d{4}$/', $pin)) {
-        $pin = '1234';
+    if (!preg_match('/^\d{4,6}$/', $pin)) {
+        $pin = '123456';
     }
     $theme = (string) ($settings['theme'] ?? 'system');
     if (!in_array($theme, ['light', 'dark', 'system'], true)) {

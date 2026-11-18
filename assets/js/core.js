@@ -12,10 +12,12 @@
 const APP_CONFIG = Object.freeze({
   appName: 'Manajemen Uang Ihsaan',
   ownerName: 'Ihsaan',
-  defaultPin: '1234', // ← PIN 4 digit bawaan
+  defaultPin: '123456', // ← PIN 6 digit bawaan
+  pinLength: 6, // panjang PIN baru
+  minPinLength: 4, // PIN lama 4 digit tetap bisa membuka aplikasi
   storageKey: 'manajemen-uang-ihsaan:data:v1',
   schemaVersion: 1,
-  appVersion: '1.1.0',
+  appVersion: '1.2.0',
   lockOnLoad: true,
   maxPinAttempts: 5,
   pinLockoutSeconds: 30,
@@ -451,7 +453,7 @@ function normalizeState(raw) {
   const metaRaw = data.meta && typeof data.meta === 'object' ? data.meta : {};
 
   const theme = ['light', 'dark', 'system'].includes(settingsRaw.theme) ? settingsRaw.theme : 'system';
-  const pin = /^\d{4}$/.test(String(settingsRaw.pin ?? settingsRaw.pinCode ?? ''))
+  const pin = /^\d{4,6}$/.test(String(settingsRaw.pin ?? settingsRaw.pinCode ?? ''))
     ? String(settingsRaw.pin ?? settingsRaw.pinCode)
     : APP_CONFIG.defaultPin;
 

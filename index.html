@@ -56,16 +56,11 @@
 
       <p class="eyebrow mb-3">Akses eksklusif pemilik</p>
       <h1 id="lockTitle" class="text-[28px] font-extrabold tracking-[-0.055em]" style="color:var(--ink);">Uangmu, urusanmu.</h1>
-      <p class="mx-auto mt-2 max-w-[280px] text-[11.5px] font-medium leading-relaxed" style="color:var(--muted);">
-        Masukkan PIN 4 digit untuk membuka catatan keuangan pribadimu.
+      <p id="pinHint" class="mx-auto mt-2 max-w-[280px] text-[11.5px] font-medium leading-relaxed" style="color:var(--muted);">
+        Masukkan PIN 6 digit untuk membuka catatan keuangan pribadimu.
       </p>
 
-      <div id="pinDots" class="mt-8 flex items-center justify-center gap-3" aria-label="PIN 4 digit">
-        <span class="pin-dot"></span>
-        <span class="pin-dot"></span>
-        <span class="pin-dot"></span>
-        <span class="pin-dot"></span>
-      </div>
+      <div id="pinDots" class="mt-8 flex items-center justify-center gap-3" aria-label="PIN 6 digit"></div>
       <p id="pinMessage" class="mt-3 min-h-[18px] text-[10.5px] font-semibold" style="color:var(--muted);" aria-live="polite">
         Ketuk angka atau gunakan keyboard.
       </p>
@@ -168,7 +163,7 @@
             </button>
           </div>
           <div class="flex items-center justify-between px-1 text-[9px] font-semibold" style="color:var(--muted-2);">
-            <span>Versi 1.1</span>
+            <span>Versi 1.2</span>
             <button type="button" class="transition hover:opacity-70" data-route="data">Backup rutin</button>
           </div>
         </div>
@@ -907,24 +902,24 @@
                     </div>
                     <div>
                       <h2 class="section-title">Ganti PIN</h2>
-                      <p class="section-subtitle">Empat digit, hanya untukmu.</p>
+                      <p class="section-subtitle">Enam digit, hanya untukmu.</p>
                     </div>
                   </div>
                   <form id="pinForm" class="mt-5 space-y-3.5" novalidate>
                     <div>
                       <label for="currentPin" class="field-label"><span>PIN saat ini</span></label>
-                      <input id="currentPin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" class="input-base font-mono tracking-[0.5em]" placeholder="••••" autocomplete="current-password">
+                      <input id="currentPin" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{4,6}" class="input-base font-mono tracking-[0.5em]" placeholder="••••••" autocomplete="current-password">
                       <p id="currentPinError" class="field-error"></p>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                       <div>
                         <label for="newPin" class="field-label"><span>PIN baru</span></label>
-                        <input id="newPin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" class="input-base font-mono tracking-[0.4em]" placeholder="••••" autocomplete="new-password">
+                        <input id="newPin" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" class="input-base font-mono tracking-[0.4em]" placeholder="••••••" autocomplete="new-password">
                         <p id="newPinError" class="field-error"></p>
                       </div>
                       <div>
                         <label for="confirmPin" class="field-label"><span>Ulangi</span></label>
-                        <input id="confirmPin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" class="input-base font-mono tracking-[0.4em]" placeholder="••••" autocomplete="new-password">
+                        <input id="confirmPin" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" class="input-base font-mono tracking-[0.4em]" placeholder="••••••" autocomplete="new-password">
                         <p id="confirmPinError" class="field-error"></p>
                       </div>
                     </div>
