@@ -97,12 +97,37 @@ function byId(a, b) {
   return String(a?.id || '').localeCompare(String(b?.id || ''));
 }
 
+// MySQL DATETIME menyimpan detik, tanpa milidetik. Samakan bentuk timestamp di
+// snapshot agar catatan yang tidak berubah tidak dianggap berubah hanya karena
+// `.123Z` hilang setelah melewati server.
+function canonicalTimestamp(value) {
+  if (!value) return value ?? null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+
 function canonicalSnapshot(snapshot) {
   if (!snapshot || typeof snapshot !== 'object') return null;
   return {
     settings: snapshot.settings && typeof snapshot.settings === 'object' ? { ...snapshot.settings } : null,
-    transactions: (Array.isArray(snapshot.transactions) ? [...snapshot.transactions] : []).sort(byId),
-    subscriptions: (Array.isArray(snapshot.subscriptions) ? [...snapshot.subscriptions] : []).sort(byId),
+    transactions: (Array.isArray(snapshot.transactions) ? [...snapshot.transactions] : [])
+      .map((item) => ({ ...item, createdAt: canonicalTimestamp(item.createdAt) }))
+      .sort(byId),
+    subscriptions: (Array.isArray(snapshot.subscriptions) ? [...snapshot.subscriptions] : [])
+      .map((item) => ({
+        ...item,
+        createdAt: canonicalTimestamp(item.createdAt),
+        lastPaidAt: canonicalTimestamp(item.lastPaidAt),
+      }))
+      .sort(byId),
+    wishlist: (Array.isArray(snapshot.wishlist) ? [...snapshot.wishlist] : [])
+      .map((item) => ({
+        ...item,
+        createdAt: canonicalTimestamp(item.createdAt),
+        completedAt: canonicalTimestamp(item.completedAt),
+      }))
+      .sort(byId),
     quickAdds: (Array.isArray(snapshot.quickAdds) ? [...snapshot.quickAdds] : []).sort(byId),
   };
 }
@@ -112,6 +137,7 @@ function currentSnapshot() {
     settings: state.settings,
     transactions: state.transactions,
     subscriptions: state.subscriptions,
+    wishlist: state.wishlist,
     quickAdds: state.quickAdds,
   });
 }
@@ -159,22 +185,24 @@ function mergeCollection(localItems, remoteItems, baseItems, conflicts) {
 function mergeSnapshots(local, remote, base) {
   const conflicts = [];
   let settingsConflict = false;
-  const emptyBase = { settings: null, transactions: [], subscriptions: [], quickAdds: [] };
-  const baseSnapshot = base || emptyBase;
+  const emptyBase = { settings: null, transactions: [], subscriptions: [], wishlist: [], quickAdds: [] };
+  const baseSnapshot = base ? canonicalSnapshot(base) : emptyBase;
+  const localSnapshot = canonicalSnapshot(local) || emptyBase;
+  const remoteSnapshot = canonicalSnapshot(remote) || emptyBase;
 
   let settings;
-  if (!remote.settings) {
-    settings = local.settings;
-  } else if (!local.settings) {
-    settings = remote.settings;
+  if (!remoteSnapshot.settings) {
+    settings = localSnapshot.settings;
+  } else if (!localSnapshot.settings) {
+    settings = remoteSnapshot.settings;
   } else {
-    const localChanged = !isSameValue(local.settings, baseSnapshot.settings);
-    const remoteChanged = !isSameValue(remote.settings, baseSnapshot.settings);
-    if (!localChanged && remoteChanged) settings = remote.settings;
-    else if (localChanged && !remoteChanged) settings = local.settings;
-    else if (isSameValue(local.settings, remote.settings)) settings = local.settings;
+    const localChanged = !isSameValue(localSnapshot.settings, baseSnapshot.settings);
+    const remoteChanged = !isSameValue(remoteSnapshot.settings, baseSnapshot.settings);
+    if (!localChanged && remoteChanged) settings = remoteSnapshot.settings;
+    else if (localChanged && !remoteChanged) settings = localSnapshot.settings;
+    else if (isSameValue(localSnapshot.settings, remoteSnapshot.settings)) settings = localSnapshot.settings;
     else {
-      settings = local.settings;
+      settings = localSnapshot.settings;
       settingsConflict = true;
     }
   }
@@ -182,9 +210,10 @@ function mergeSnapshots(local, remote, base) {
   return {
     snapshot: canonicalSnapshot({
       settings,
-      transactions: mergeCollection(local.transactions, remote.transactions, baseSnapshot.transactions, conflicts),
-      subscriptions: mergeCollection(local.subscriptions, remote.subscriptions, baseSnapshot.subscriptions, conflicts),
-      quickAdds: mergeCollection(local.quickAdds, remote.quickAdds, baseSnapshot.quickAdds, conflicts),
+      transactions: mergeCollection(localSnapshot.transactions, remoteSnapshot.transactions, baseSnapshot.transactions, conflicts),
+      subscriptions: mergeCollection(localSnapshot.subscriptions, remoteSnapshot.subscriptions, baseSnapshot.subscriptions, conflicts),
+      wishlist: mergeCollection(localSnapshot.wishlist, remoteSnapshot.wishlist, baseSnapshot.wishlist, conflicts),
+      quickAdds: mergeCollection(localSnapshot.quickAdds, remoteSnapshot.quickAdds, baseSnapshot.quickAdds, conflicts),
     }),
     conflicts,
     settingsConflict,
@@ -195,6 +224,7 @@ function isPristineLocalState() {
   return (
     state.transactions.length === 0 &&
     state.subscriptions.length === 0 &&
+    state.wishlist.length === 0 &&
     !state.meta.lastBackupAt &&
     isSameValue(state.settings, DEFAULT_SETTINGS) &&
     isSameValue(canonicalSnapshot({ quickAdds: state.quickAdds }).quickAdds, canonicalSnapshot({ quickAdds: DEFAULT_QUICK_ADDS }).quickAdds)
@@ -210,6 +240,9 @@ function applySnapshot(snapshot) {
   state.settings = { ...(snapshot.settings || state.settings) };
   state.transactions = (snapshot.transactions || []).map((item) => ({ ...item }));
   state.subscriptions = (snapshot.subscriptions || []).map((item) => ({ ...item }));
+  if (Array.isArray(snapshot.wishlist)) {
+    state.wishlist = snapshot.wishlist.map((item) => ({ ...item }));
+  }
   if (Array.isArray(snapshot.quickAdds)) {
     state.quickAdds = snapshot.quickAdds.map((item) => ({ ...item }));
   }

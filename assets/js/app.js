@@ -267,6 +267,7 @@ function applyRoute(route, { scroll = true } = {}) {
     renderAddPreview();
   }
   if (target === 'subscriptions') renderSubscriptionsPage();
+  if (target === 'wishlist') renderWishlistPage();
   if (target === 'history') {
     renderHistoryOptions();
     syncHistoryInputs();
@@ -339,6 +340,24 @@ function handleGlobalClick(event) {
       break;
     case 'pay-subscription':
       askPaySubscription(id);
+      break;
+    case 'add-wishlist':
+      openWishlistModal();
+      break;
+    case 'edit-wishlist':
+      openWishlistModal(id);
+      break;
+    case 'wishlist-add-funds':
+      askAddWishlistFunds(id);
+      break;
+    case 'wishlist-buy':
+      askBuyWishlist(id);
+      break;
+    case 'delete-wishlist':
+      askDeleteWishlist(id);
+      break;
+    case 'wishlist-reopen':
+      reopenWishlist(id);
       break;
     case 'add-preset':
       openPresetModal();

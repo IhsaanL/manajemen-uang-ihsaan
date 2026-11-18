@@ -1,6 +1,6 @@
 {
   "name": "manajemen-uang-ihsaan",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "private": true,
   "description": "Aplikasi keuangan pribadi offline untuk Windows dan smartphone.",
   "scripts": {

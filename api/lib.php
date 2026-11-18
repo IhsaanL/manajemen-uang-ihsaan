@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 const MUIS_MAX_TRANSACTIONS = 20000;
 const MUIS_MAX_SUBSCRIPTIONS = 500;
+const MUIS_MAX_WISHLIST = 200;
 const MUIS_MAX_QUICK_ADDS = 20;
 
 function muis_config(): array
@@ -324,6 +325,52 @@ function muis_sanitize_subscriptions(mixed $raw): array
     return $result;
 }
 
+function muis_sanitize_wishlist(mixed $raw): array
+{
+    if (!is_array($raw)) {
+        return [];
+    }
+
+    $result = [];
+    $seen = [];
+    foreach (array_slice($raw, 0, MUIS_MAX_WISHLIST) as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+        $name = muis_text($item['name'] ?? '', 60);
+        $target = muis_int($item['target'] ?? 0, 1, 1000000000000, 0);
+        if ($name === '' || $target <= 0) {
+            continue;
+        }
+        $id = muis_text($item['id'] ?? '', 100);
+        if ($id === '' || isset($seen[$id])) {
+            continue;
+        }
+        $seen[$id] = true;
+
+        $saved = min($target, muis_int($item['saved'] ?? 0, 0, 1000000000000, 0));
+        $completed = ($item['completed'] ?? false) === true;
+        $createdAt = muis_datetime($item['createdAt'] ?? null);
+        $completedAtRaw = $item['completedAt'] ?? null;
+
+        $result[] = [
+            'id' => $id,
+            'name' => $name,
+            'target' => $target,
+            'saved' => $saved,
+            'deadline' => muis_valid_date($item['deadline'] ?? ''),
+            'note' => muis_text($item['note'] ?? '', 160),
+            'completed' => $completed,
+            'completedAt' => $completed
+                ? (is_string($completedAtRaw) && $completedAtRaw !== '' ? muis_iso(muis_datetime($completedAtRaw)) : $createdAt)
+                : null,
+            'createdAt' => $createdAt,
+        ];
+    }
+
+    return $result;
+}
+
 function muis_sanitize_quick_adds(mixed $raw): array
 {
     if (!is_array($raw)) {
@@ -416,6 +463,22 @@ function muis_read_state(PDO $db): array
         ];
     }
 
+    $wishlist = [];
+    $rows = $db->query('SELECT * FROM wishlist ORDER BY created_at ASC, id ASC');
+    foreach ($rows as $row) {
+        $wishlist[] = [
+            'id' => (string) $row['id'],
+            'name' => (string) $row['name'],
+            'target' => (int) $row['target'],
+            'saved' => (int) $row['saved'],
+            'deadline' => $row['deadline'] !== null && $row['deadline'] !== '' ? (string) $row['deadline'] : null,
+            'note' => (string) $row['note'],
+            'completed' => (bool) $row['completed'],
+            'completedAt' => muis_iso($row['completed_at']),
+            'createdAt' => muis_iso((string) $row['created_at']),
+        ];
+    }
+
     return [
         'revision' => $revision,
         'updatedAt' => $meta ? muis_iso((string) $meta['updated_at']) : null,
@@ -423,6 +486,7 @@ function muis_read_state(PDO $db): array
             'settings' => $settings,
             'transactions' => $transactions,
             'subscriptions' => $subscriptions,
+            'wishlist' => $wishlist,
             'quickAdds' => $quickAdds,
         ],
     ];
@@ -438,6 +502,7 @@ function muis_write_state(PDO $db, array $data, ?int $baseRevision, string $clie
     $settings = muis_sanitize_settings($data['settings'] ?? null);
     $transactions = muis_sanitize_transactions($data['transactions'] ?? []);
     $subscriptions = muis_sanitize_subscriptions($data['subscriptions'] ?? []);
+    $wishlist = muis_sanitize_wishlist($data['wishlist'] ?? []);
     $quickAdds = muis_sanitize_quick_adds($data['quickAdds'] ?? []);
 
     $db->beginTransaction();
@@ -454,6 +519,7 @@ function muis_write_state(PDO $db, array $data, ?int $baseRevision, string $clie
 
         $db->exec('DELETE FROM transactions');
         $db->exec('DELETE FROM subscriptions');
+        $db->exec('DELETE FROM wishlist');
         $db->exec('DELETE FROM quick_adds');
 
         $statement = $db->prepare(
@@ -496,6 +562,24 @@ function muis_write_state(PDO $db, array $data, ?int $baseRevision, string $clie
         );
         foreach ($quickAdds as $index => $item) {
             $statement->execute([$item['id'], $item['label'], $item['amount'], $item['category'], $index]);
+        }
+
+        $statement = $db->prepare(
+            'INSERT INTO wishlist (id, name, target, saved, deadline, note, completed, completed_at, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        );
+        foreach ($wishlist as $item) {
+            $statement->execute([
+                $item['id'],
+                $item['name'],
+                $item['target'],
+                $item['saved'],
+                $item['deadline'],
+                $item['note'],
+                $item['completed'] ? 1 : 0,
+                $item['completedAt'] !== null ? muis_datetime($item['completedAt']) : null,
+                $item['createdAt'],
+            ]);
         }
 
         $statement = $db->prepare(

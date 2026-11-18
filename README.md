@@ -6,6 +6,7 @@ Aplikasi keuangan pribadi bergaya fintech yang berjalan **offline-first** di bro
 - Data tetap bisa dicatat saat Wi-Fi mati.
 - MySQL tidak pernah diakses langsung oleh browser. Semua lewat API.
 - Tersedia backup JSON, restore, dan ekspor CSV.
+- Ada wishlist tabungan target untuk menyisihkan uang ke barang yang ingin dibeli.
 
 ---
 
@@ -47,6 +48,21 @@ Mode ini sepenuhnya lokal. Sinkronisasi MySQL tidak aktif.
 
 ---
 
+## Wishlist / tabungan target
+
+Wishlist adalah catatan **alokasi uang**, bukan transaksi. Menyisihkan dana ke sebuah target tidak mengubah saldo dan tidak muncul di riwayat.
+
+1. Buka **Wishlist** di sidebar, atau kartu **Tabungan target** di beranda.
+2. Isi nama barang, harga target, tenggat opsional, dan catatan.
+3. Tekan **Tabung** untuk menambah dana yang sudah disisihkan.
+4. Saat target penuh (atau kamu memutuskan membeli lebih awal), tekan **Beli & catat**.
+   Tindakan ini membuat satu transaksi pengeluaran sebesar harga target dan memindahkan barang ke arsip **Sudah dibeli**.
+5. Barang di arsip bisa **dibuka kembali** atau dihapus. Transaksi yang sudah tercatat tidak ikut terhapus.
+
+Dana tabungan ikut tersinkron ke MySQL dan masuk backup JSON.
+
+---
+
 ## Setup Laragon + MySQL
 
 ### 1. Prasyarat
@@ -73,6 +89,8 @@ Skrip ini akan:
 
 > Simpan kunci API yang ditampilkan. Kunci itu yang dimasukkan ke aplikasi.
 > `api/config.php` sengaja di-ignore Git dan tidak boleh di-commit.
+>
+> Sudah pernah setup sebelumnya? Jalankan ulang skrip ini (atau import `api/schema.sql`) untuk menambah tabel `wishlist`. Skrip memakai `CREATE TABLE IF NOT EXISTS`, jadi data lama tidak dihapus.
 
 ### 3. Jalankan Laragon
 
@@ -154,6 +172,7 @@ Perilaku lain:
 
 - Transaksi
 - Langganan
+- Wishlist / tabungan target
 - Preset catat cepat
 - Pengaturan: nama, batas bulanan/mingguan, tema, dan PIN
 
@@ -198,6 +217,7 @@ Contoh `PUT`:
     },
     "transactions": [],
     "subscriptions": [],
+    "wishlist": [],
     "quickAdds": []
   }
 }
@@ -210,6 +230,7 @@ Jika `baseRevision` tidak sama dengan revisi server, API mengembalikan `409` dan
 - `settings`
 - `transactions`
 - `subscriptions`
+- `wishlist`
 - `quick_adds`
 - `sync_meta` — revisi untuk optimistic locking
 

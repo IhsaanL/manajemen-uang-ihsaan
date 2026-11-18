@@ -645,6 +645,355 @@ function askPaySubscription(id) {
 }
 
 /* --------------------------------------------------------------------------
+   WISHLIST / TABUNGAN TARGET
+   -------------------------------------------------------------------------- */
+function openWishlistModal(id = null) {
+  const existing = id ? state.wishlist.find((item) => item.id === id) : null;
+
+  openModal({
+    title: existing ? 'Edit wishlist' : 'Wishlist baru',
+    subtitle: 'Tabungan ini hanya catatan alokasi. Saldo dan transaksi tidak berubah sampai kamu menekan "Beli & catat".',
+    content: `
+      <form id="wishlistForm" class="space-y-4" novalidate>
+        <div>
+          <label for="wishName" class="field-label"><span>Barang yang diincar</span></label>
+          <input id="wishName" type="text" maxlength="60" class="input-base" placeholder="Contoh: Headset baru" value="${existing ? esc(existing.name) : ''}" autocomplete="off">
+          <p id="wishNameError" class="field-error"></p>
+        </div>
+        <div>
+          <label for="wishTarget" class="field-label"><span>Harga target</span><span class="text-[9px] font-medium" style="color:var(--muted-2);">Rp</span></label>
+          <input id="wishTarget" type="text" inputmode="numeric" class="input-base font-mono" placeholder="450.000" value="${existing ? formatNumber(existing.target) : ''}" autocomplete="off">
+          <p id="wishTargetError" class="field-error"></p>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="wishSaved" class="field-label"><span>Sudah terkumpul</span></label>
+            <input id="wishSaved" type="text" inputmode="numeric" class="input-base font-mono" placeholder="0" value="${existing ? formatNumber(existing.saved) : ''}" autocomplete="off">
+            <p id="wishSavedError" class="field-error"></p>
+          </div>
+          <div>
+            <label for="wishDeadline" class="field-label"><span>Target beli</span></label>
+            <input id="wishDeadline" type="date" class="input-base" value="${existing?.deadline || ''}">
+            <p id="wishDeadlineError" class="field-error"></p>
+          </div>
+        </div>
+        <div>
+          <label for="wishNote" class="field-label"><span>Catatan <span class="font-medium" style="color:var(--muted-2);">(opsional)</span></span></label>
+          <textarea id="wishNote" maxlength="160" class="input-base" rows="2" placeholder="Contoh: warna hitam, beli setelah ujian">${existing ? esc(existing.note) : ''}</textarea>
+        </div>
+        <div class="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end" style="border-color:var(--line);">
+          <button type="button" class="btn btn-secondary" data-modal-close>Batal</button>
+          <button type="submit" class="btn btn-primary">${icon('save', 'h-4 w-4')} ${existing ? 'Simpan Perubahan' : 'Tambah Wishlist'}</button>
+        </div>
+      </form>
+    `,
+  });
+
+  setupMoneyInput($('#wishTarget'));
+  setupMoneyInput($('#wishSaved'));
+  refreshIcons();
+
+  $('#wishlistForm')?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const name = cleanText($('#wishName')?.value, 60);
+    const target = parseMoney($('#wishTarget')?.value);
+    const savedRaw = parseMoney($('#wishSaved')?.value);
+    const deadline = $('#wishDeadline')?.value || null;
+    const note = cleanText($('#wishNote')?.value, 160);
+    let firstInvalid = null;
+
+    clearError('#wishName', '#wishNameError');
+    clearError('#wishTarget', '#wishTargetError');
+    clearError('#wishSaved', '#wishSavedError');
+    clearError('#wishDeadline', '#wishDeadlineError');
+
+    if (!name) {
+      setError('#wishName', '#wishNameError', 'Nama barang wajib diisi.');
+      firstInvalid = firstInvalid || $('#wishName');
+    }
+    if (target <= 0) {
+      setError('#wishTarget', '#wishTargetError', 'Harga target harus lebih dari Rp 0.');
+      firstInvalid = firstInvalid || $('#wishTarget');
+    }
+    if (savedRaw > target) {
+      setError('#wishSaved', '#wishSavedError', 'Tabungan tidak boleh melebihi harga target.');
+      firstInvalid = firstInvalid || $('#wishSaved');
+    }
+    if (deadline && !isValidDateKey(deadline)) {
+      setError('#wishDeadline', '#wishDeadlineError', 'Tanggal target tidak valid.');
+      firstInvalid = firstInvalid || $('#wishDeadline');
+    }
+    if (firstInvalid) {
+      firstInvalid.focus();
+      return;
+    }
+
+    if (existing) {
+      const index = state.wishlist.findIndex((item) => item.id === existing.id);
+      if (index >= 0) {
+        state.wishlist[index] = {
+          ...existing,
+          name,
+          target,
+          saved: Math.max(0, savedRaw),
+          deadline,
+          note,
+        };
+      }
+    } else {
+      state.wishlist.push({
+        id: uid('wish'),
+        name,
+        target,
+        saved: Math.max(0, savedRaw),
+        deadline,
+        note,
+        completed: false,
+        completedAt: null,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    saveState();
+    closeModal();
+    renderAll();
+    showToast(existing ? 'Wishlist diperbarui.' : 'Wishlist ditambahkan ke tabungan target.');
+  });
+}
+
+function askAddWishlistFunds(id) {
+  const item = state.wishlist.find((entry) => entry.id === id);
+  if (!item) return;
+  if (item.completed) {
+    showToast('Wishlist ini sudah dibeli.', { type: 'warning' });
+    return;
+  }
+
+  const progress = wishlistProgress(item);
+  if (progress.remaining <= 0) {
+    showToast('Target sudah terkumpul penuh. Tinggal tekan "Beli & catat".', { type: 'warning' });
+    return;
+  }
+
+  const suggestions = [10000, 25000, 50000, 100000]
+    .filter((amount) => amount < progress.remaining)
+    .concat(progress.remaining);
+
+  openModal({
+    title: 'Tambah tabungan',
+    subtitle: 'Uang ini hanya dialokasikan untuk target. Saldo utama tidak berkurang sampai barang dibeli.',
+    content: `
+      <form id="wishlistFundsForm" class="space-y-4" novalidate>
+        <div class="rounded-2xl border p-4" style="border-color:var(--line);background:var(--surface-alt);">
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+              <p class="truncate text-[11px] font-extrabold">${esc(item.name)}</p>
+              <p class="mt-1 text-[9px] font-medium" style="color:var(--muted);">Terkumpul ${formatRp(progress.saved)} dari ${formatRp(progress.target)}</p>
+            </div>
+            <span class="badge badge-neutral">${progress.percent}%</span>
+          </div>
+          <div class="progress-track mt-3">
+            <div class="progress-fill" style="width:${progress.percent}%"></div>
+          </div>
+          <p class="mt-2 text-[9px] font-semibold" style="color:var(--muted);">Sisa ${formatRp(progress.remaining)}</p>
+        </div>
+        <div>
+          <label for="wishFunds" class="field-label"><span>Nominal yang disisihkan</span><span class="text-[9px] font-medium" style="color:var(--muted-2);">Rp</span></label>
+          <input id="wishFunds" type="text" inputmode="numeric" class="input-base font-mono" placeholder="25.000" autocomplete="off">
+          <p id="wishFundsError" class="field-error"></p>
+          <div class="mt-2 flex flex-wrap gap-1.5">
+            ${suggestions
+              .map(
+                (amount, index) =>
+                  `<button type="button" class="chip" data-wishlist-amount="${amount}">${
+                    index === suggestions.length - 1 ? `Sisa ${formatRp(amount)}` : formatRp(amount)
+                  }</button>`
+              )
+              .join('')}
+          </div>
+        </div>
+        <div class="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end" style="border-color:var(--line);">
+          <button type="button" class="btn btn-secondary" data-modal-close>Batal</button>
+          <button type="submit" class="btn btn-primary">${icon('piggy-bank', 'h-4 w-4')} Tambah Tabungan</button>
+        </div>
+      </form>
+    `,
+  });
+
+  setupMoneyInput($('#wishFunds'));
+  refreshIcons();
+
+  $$('[data-wishlist-amount]', $('#modalLayer')).forEach((button) => {
+    button.addEventListener('click', () => {
+      const input = $('#wishFunds');
+      if (!input) return;
+      input.value = formatNumber(Number(button.dataset.wishlistAmount));
+      clearError('#wishFunds', '#wishFundsError');
+      input.focus();
+    });
+  });
+
+  $('#wishlistFundsForm')?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const input = $('#wishFunds');
+    const amount = parseMoney(input?.value);
+    clearError('#wishFunds', '#wishFundsError');
+    if (amount <= 0) {
+      setError('#wishFunds', '#wishFundsError', 'Nominal harus lebih dari Rp 0.');
+      input?.focus();
+      return;
+    }
+
+    const previousSaved = item.saved;
+    const applied = Math.min(amount, progress.remaining);
+    item.saved = previousSaved + applied;
+    saveState();
+    closeModal();
+    renderAll();
+    showToast(
+      applied < amount
+        ? `${item.name} sudah penuh. ${formatRp(applied)} dicatat, sisa ${formatRp(amount - applied)} tidak dipakai.`
+        : `${formatRp(applied)} ditabung untuk ${item.name}.`,
+      {
+        type: applied < amount ? 'warning' : 'success',
+        actionLabel: 'Urungkan',
+        onAction: () => {
+          item.saved = previousSaved;
+          saveState();
+          renderAll();
+        },
+      }
+    );
+  });
+}
+
+function askBuyWishlist(id) {
+  const item = state.wishlist.find((entry) => entry.id === id);
+  if (!item) return;
+  const progress = wishlistProgress(item);
+  const snapshot = computeSnapshot();
+  const balanceAfter = snapshot.totalBalance - item.target;
+
+  confirmDialog({
+    title: 'Beli & catat?',
+    subtitle: 'Pengeluaran sebesar harga target akan masuk riwayat dan barang dipindah ke arsip.',
+    content: `
+      <div class="rounded-2xl border p-4" style="border-color:var(--line);background:var(--surface-alt);">
+        <div class="flex items-start justify-between gap-4">
+          <div class="min-w-0">
+            <p class="truncate text-[11px] font-extrabold">${esc(item.name)}</p>
+            <p class="mt-1 text-[9px] font-medium" style="color:var(--muted);">Terkumpul ${formatRp(progress.saved)} dari ${formatRp(progress.target)}</p>
+          </div>
+          <p class="money text-[14px] font-bold">${formatRp(item.target)}</p>
+        </div>
+        <div class="mt-3 flex items-center justify-between border-t pt-3" style="border-color:var(--line);">
+          <span class="text-[9px] font-semibold" style="color:var(--muted);">Saldo setelah beli</span>
+          <span class="money text-[10px] font-bold" style="color:${balanceAfter < 0 ? 'var(--coral)' : 'var(--emerald-deep)'};">${formatRp(balanceAfter)}</span>
+        </div>
+      </div>
+      ${
+        progress.saved < item.target
+          ? `<div class="alert-banner"><span class="mt-0.5">${icon('triangle-alert', 'h-4 w-4')}</span><p class="text-[9.5px] font-semibold">Tabungan baru ${progress.percent}%. Membeli sekarang berarti memakai uang di luar target yang sudah disisihkan.</p></div>`
+          : ''
+      }
+      ${
+        balanceAfter < 0
+          ? `<div class="alert-banner"><span class="mt-0.5">${icon('triangle-alert', 'h-4 w-4')}</span><p class="text-[9.5px] font-semibold">Saldo tercatat akan menjadi minus setelah pembelian ini.</p></div>`
+          : ''
+      }
+    `,
+    confirmLabel: 'Beli & Catat',
+    tone: 'primary',
+    onConfirm: () => {
+      const transaction = {
+        id: uid('tx'),
+        type: 'expense',
+        amount: item.target,
+        category: 'lainnya',
+        note: `Beli ${item.name}`,
+        date: todayKey(),
+        createdAt: new Date().toISOString(),
+      };
+      const previous = {
+        saved: item.saved,
+        completed: item.completed,
+        completedAt: item.completedAt,
+      };
+
+      state.transactions.unshift(transaction);
+      item.saved = item.target;
+      item.completed = true;
+      item.completedAt = new Date().toISOString();
+      saveState();
+      renderAll();
+      showToast(`${item.name} dibeli dan dicatat.`, {
+        actionLabel: 'Urungkan',
+        onAction: () => {
+          state.transactions = state.transactions.filter((entry) => entry.id !== transaction.id);
+          item.saved = previous.saved;
+          item.completed = previous.completed;
+          item.completedAt = previous.completedAt;
+          saveState();
+          renderAll();
+        },
+      });
+    },
+  });
+}
+
+function askDeleteWishlist(id) {
+  const item = state.wishlist.find((entry) => entry.id === id);
+  if (!item) return;
+  const index = state.wishlist.findIndex((entry) => entry.id === id);
+  const progress = wishlistProgress(item);
+
+  confirmDialog({
+    title: 'Hapus wishlist?',
+    subtitle: 'Catatan tabungannya ikut hilang, tapi transaksi yang sudah tercatat tidak berubah.',
+    content: `
+      <div class="rounded-2xl border p-4" style="border-color:var(--line);background:var(--surface-alt);">
+        <p class="text-[11px] font-extrabold">${esc(item.name)}</p>
+        <p class="mt-1 text-[9px] font-medium" style="color:var(--muted);">${formatRp(progress.saved)} terkumpul dari ${formatRp(progress.target)}${item.completed ? ' · sudah dibeli' : ''}</p>
+      </div>
+      <p>Uang yang sudah dialokasikan tidak dihapus dari saldo karena memang tidak pernah mengurangi saldo.</p>
+    `,
+    confirmLabel: 'Hapus Wishlist',
+    tone: 'danger',
+    onConfirm: () => {
+      state.wishlist.splice(index, 1);
+      saveState();
+      renderAll();
+      showToast('Wishlist dihapus.', {
+        actionLabel: 'Urungkan',
+        onAction: () => {
+          state.wishlist.splice(Math.min(index, state.wishlist.length), 0, item);
+          saveState();
+          renderAll();
+        },
+      });
+    },
+  });
+}
+
+function reopenWishlist(id) {
+  const item = state.wishlist.find((entry) => entry.id === id);
+  if (!item || !item.completed) return;
+  const previousCompletedAt = item.completedAt;
+  item.completed = false;
+  item.completedAt = null;
+  saveState();
+  renderAll();
+  showToast(`${item.name} dibuka kembali. Tabungan yang tersisa tetap tersimpan.`, {
+    actionLabel: 'Urungkan',
+    onAction: () => {
+      item.completed = true;
+      item.completedAt = previousCompletedAt;
+      saveState();
+      renderAll();
+    },
+  });
+}
+
+/* --------------------------------------------------------------------------
    PRESET CEPAT
    -------------------------------------------------------------------------- */
 function openPresetModal() {
@@ -842,6 +1191,7 @@ function exportJSON() {
       settings: { ...state.settings },
       transactions: state.transactions,
       subscriptions: state.subscriptions,
+      wishlist: state.wishlist,
       quickAdds: state.quickAdds,
       meta: {
         ...state.meta,
@@ -953,7 +1303,7 @@ async function handleImportFile(event) {
 function askResetData() {
   confirmDialog({
     title: 'Reset data keuangan?',
-    subtitle: 'Semua transaksi dan langganan akan dihapus.',
+    subtitle: 'Semua transaksi, langganan, dan wishlist akan dihapus.',
     content: `
       <div class="rounded-2xl border p-4" style="border-color:var(--line);background:var(--surface-alt);">
         <div class="flex items-center justify-between gap-3 text-[10px] font-semibold">
@@ -963,6 +1313,10 @@ function askResetData() {
         <div class="mt-2 flex items-center justify-between gap-3 text-[10px] font-semibold">
           <span style="color:var(--muted);">Langganan</span>
           <span class="money font-bold">${state.subscriptions.length}</span>
+        </div>
+        <div class="mt-2 flex items-center justify-between gap-3 text-[10px] font-semibold">
+          <span style="color:var(--muted);">Wishlist</span>
+          <span class="money font-bold">${state.wishlist.length}</span>
         </div>
         <div class="mt-2 flex items-center justify-between gap-3 text-[10px] font-semibold">
           <span style="color:var(--muted);">Saldo tercatat</span>
@@ -976,6 +1330,7 @@ function askResetData() {
     onConfirm: () => {
       state.transactions = [];
       state.subscriptions = [];
+      state.wishlist = [];
       ui.history = { search: '', type: 'all', category: 'all', month: 'all', limit: 20 };
       resetAddForm();
       saveState();

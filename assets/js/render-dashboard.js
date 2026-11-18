@@ -12,6 +12,8 @@ function renderAll({ charts = true } = {}) {
   if (typeof renderAddCategories === 'function') renderAddCategories();
   if (typeof renderAddPreview === 'function') renderAddPreview();
   if (typeof renderSubscriptionsPage === 'function') renderSubscriptionsPage();
+  if (typeof renderWishlistPage === 'function') renderWishlistPage();
+  if (typeof renderWishlistDashboard === 'function') renderWishlistDashboard();
   if (typeof renderHistoryOptions === 'function') renderHistoryOptions();
   if (typeof renderHistory === 'function') renderHistory();
   if (typeof renderDataPage === 'function') renderDataPage();
@@ -65,6 +67,13 @@ function renderNavState() {
   if (badge) {
     badge.textContent = String(dueSoon);
     badge.hidden = dueSoon === 0;
+  }
+
+  const readyWishlist = state.wishlist.filter((item) => !item.completed && wishlistProgress(item).ready).length;
+  const wishlistBadge = $('#navWishBadge');
+  if (wishlistBadge) {
+    wishlistBadge.textContent = String(readyWishlist);
+    wishlistBadge.hidden = readyWishlist === 0;
   }
 }
 

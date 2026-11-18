@@ -50,6 +50,21 @@ CREATE TABLE IF NOT EXISTS `subscriptions` (
   KEY `idx_sub_active` (`active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `wishlist` (
+  `id` VARCHAR(100) NOT NULL,
+  `name` VARCHAR(60) NOT NULL,
+  `target` BIGINT UNSIGNED NOT NULL,
+  `saved` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  `deadline` DATE NULL,
+  `note` VARCHAR(160) NOT NULL DEFAULT '',
+  `completed` TINYINT(1) NOT NULL DEFAULT 0,
+  `completed_at` DATETIME NULL,
+  `created_at` DATETIME NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_wish_completed` (`completed`),
+  KEY `idx_wish_deadline` (`deadline`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `quick_adds` (
   `id` VARCHAR(100) NOT NULL,
   `label` VARCHAR(40) NOT NULL,

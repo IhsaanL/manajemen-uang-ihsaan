@@ -17,7 +17,7 @@ const APP_CONFIG = Object.freeze({
   minPinLength: 4, // PIN lama 4 digit tetap bisa membuka aplikasi
   storageKey: 'manajemen-uang-ihsaan:data:v1',
   schemaVersion: 1,
-  appVersion: '1.2.1',
+  appVersion: '1.2.2',
   lockOnLoad: true,
   maxPinAttempts: 5,
   pinLockoutSeconds: 30,
@@ -42,11 +42,12 @@ const INCOME_CATEGORIES = Object.freeze([
 ]);
 
 const CYCLE_LABELS = Object.freeze({ weekly: 'Mingguan', monthly: 'Bulanan' });
-const ROUTES = Object.freeze(['dashboard', 'add', 'subscriptions', 'history', 'data']);
+const ROUTES = Object.freeze(['dashboard', 'add', 'subscriptions', 'wishlist', 'history', 'data']);
 const ROUTE_META = Object.freeze({
   dashboard: { title: 'Beranda', eyebrow: 'Ruang pribadi' },
   add: { title: 'Catat Transaksi', eyebrow: 'Catatan baru' },
   subscriptions: { title: 'Langganan', eyebrow: 'Pengeluaran berulang' },
+  wishlist: { title: 'Wishlist', eyebrow: 'Tabungan target' },
   history: { title: 'Riwayat Transaksi', eyebrow: 'Jejak keuangan' },
   data: { title: 'Data & Pengaturan', eyebrow: 'Kontrol penuh' },
 });
@@ -365,6 +366,7 @@ function createInitialState() {
     },
     transactions: [],
     subscriptions: [],
+    wishlist: [],
     quickAdds: DEFAULT_QUICK_ADDS.map((preset) => ({ ...preset })),
     meta: {
       lastBackupAt: null,
@@ -446,6 +448,35 @@ function normalizeQuickAdd(raw) {
   };
 }
 
+function normalizeWishlistItem(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const name = cleanText(raw.name, 60);
+  const target = toInteger(raw.target, 0);
+  if (!name || target <= 0 || target > 1e12) return null;
+  const saved = Math.min(target, Math.max(0, toInteger(raw.saved, 0)));
+  const deadline = isValidDateKey(raw.deadline) ? raw.deadline : null;
+  const note = cleanText(raw.note, 160);
+  const completed = raw.completed === true;
+  const createdAtDate = new Date(raw.createdAt);
+  const createdAt = Number.isNaN(createdAtDate.getTime()) ? new Date().toISOString() : createdAtDate.toISOString();
+  let completedAt = null;
+  if (completed && raw.completedAt) {
+    const parsed = new Date(raw.completedAt);
+    if (!Number.isNaN(parsed.getTime())) completedAt = parsed.toISOString();
+  }
+  return {
+    id: cleanText(raw.id, 100) || uid('wish'),
+    name,
+    target,
+    saved,
+    deadline,
+    note,
+    completed,
+    completedAt: completed ? completedAt || createdAt : null,
+    createdAt,
+  };
+}
+
 function normalizeState(raw) {
   const source = raw && typeof raw === 'object' ? raw : {};
   const data = source.data && typeof source.data === 'object' ? source.data : source;
@@ -483,6 +514,16 @@ function normalizeState(raw) {
     .filter(Boolean)
     .slice(0, 8);
 
+  const wishlistIds = new Set();
+  const wishlist = (Array.isArray(data.wishlist) ? data.wishlist : [])
+    .map(normalizeWishlistItem)
+    .filter((item) => {
+      if (!item || wishlistIds.has(item.id)) return false;
+      wishlistIds.add(item.id);
+      return true;
+    })
+    .slice(0, 200);
+
   let lastBackupAt = null;
   if (metaRaw.lastBackupAt) {
     const parsed = new Date(metaRaw.lastBackupAt);
@@ -500,6 +541,7 @@ function normalizeState(raw) {
     },
     transactions,
     subscriptions,
+    wishlist,
     quickAdds: hasQuickAddsArray ? quickAdds : DEFAULT_QUICK_ADDS.map((preset) => ({ ...preset })),
     meta: {
       lastBackupAt,
@@ -745,6 +787,68 @@ function normalizedMonthlySubscriptionTotal() {
         return total + (subscription.cycle === 'weekly' ? subscription.amount * (52 / 12) : subscription.amount);
       }, 0)
   );
+}
+
+/* --------------------------------------------------------------------------
+   WISHLIST / TABUNGAN TARGET
+   -------------------------------------------------------------------------- */
+function wishlistProgress(item) {
+  const target = Math.max(0, toInteger(item?.target, 0));
+  const saved = Math.min(target, Math.max(0, toInteger(item?.saved, 0)));
+  const remaining = Math.max(0, target - saved);
+  const percent = target > 0 ? Math.min(100, Math.round((saved / target) * 100)) : 0;
+  return {
+    saved,
+    target,
+    remaining,
+    percent,
+    ready: target > 0 && saved >= target,
+    completed: item?.completed === true,
+  };
+}
+
+function sortedWishlist({ includeCompleted = false, onlyCompleted = false } = {}) {
+  return state.wishlist
+    .filter((item) => (onlyCompleted ? item.completed : includeCompleted ? true : !item.completed))
+    .sort((a, b) => {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      if (a.completed) return String(b.completedAt || '').localeCompare(String(a.completedAt || ''));
+      const progressA = wishlistProgress(a);
+      const progressB = wishlistProgress(b);
+      if (progressA.ready !== progressB.ready) return progressA.ready ? -1 : 1;
+      if (a.deadline !== b.deadline) {
+        if (!a.deadline) return 1;
+        if (!b.deadline) return -1;
+        return a.deadline.localeCompare(b.deadline);
+      }
+      return String(a.createdAt).localeCompare(String(b.createdAt));
+    });
+}
+
+function wishlistSummary() {
+  let totalTarget = 0;
+  let totalSaved = 0;
+  let ready = 0;
+  let nearest = null;
+
+  state.wishlist.forEach((item) => {
+    if (item.completed) return;
+    const progress = wishlistProgress(item);
+    totalTarget += progress.target;
+    totalSaved += progress.saved;
+    if (progress.ready) ready += 1;
+    if (item.deadline && (!nearest || item.deadline < nearest.deadline)) nearest = item;
+  });
+
+  return {
+    activeCount: state.wishlist.filter((item) => !item.completed).length,
+    completedCount: state.wishlist.filter((item) => item.completed).length,
+    totalTarget,
+    totalSaved,
+    totalRemaining: Math.max(0, totalTarget - totalSaved),
+    ready,
+    nearest,
+  };
 }
 
 function getFilteredTransactions() {
