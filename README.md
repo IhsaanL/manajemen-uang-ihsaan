@@ -116,6 +116,15 @@ Status di header akan berubah menjadi **Tersinkron** jika berhasil.
 
 > Lewat `http://IP-LAN`, browser biasanya hanya mengizinkan **shortcut home screen**, bukan PWA penuh dengan service worker. PWA penuh membutuhkan `https://` atau `localhost`. Aplikasi dan sinkronisasi tetap berfungsi.
 
+### Catatan offline di HP
+
+- Selama halaman aplikasi masih terbuka, Wi-Fi mati tidak menghentikan pencatatan. Data masuk ke LocalStorage dan dikirim saat online lagi.
+- Setelah semua tab ditutup, membuka aplikasi lagi dari `http://IP-LAN` membutuhkan laptop + Laragon tetap hidup.
+- Untuk **cold-start offline** di HP (aplikasi tetap terbuka tanpa server), diperlukan HTTPS agar service worker aktif:
+  - **Cloudflare Tunnel / ngrok** → HTTPS, tetapi laptop tetap harus nyala.
+  - **mkcert + Apache SSL** → CA lokal yang dipercaya di HP, lalu akses `https://...` (lebih teknis).
+  - **Hosting/VPS** → paling andal untuk akses dari mana saja.
+
 ---
 
 ## Cara kerja sinkronisasi
